@@ -270,7 +270,7 @@ void PlayerManager::save()
         players_file << "</players>\n";
         players_file.close();
     }
-    catch (std::runtime_error& e)
+    catch (const std::exception& e)
     {
         Log::error("PlayerManager", "Failed to write config to %s.",
                     filename.c_str());

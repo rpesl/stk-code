@@ -34,7 +34,7 @@ void Binding::save(std::ofstream& stream) const
 
     if (m_type == Input::IT_KEYBOARD)
     {
-        stream << "character=\"" << m_character << "\" ";
+        stream << "character=\"" << static_cast<char>(m_character) << "\" ";
     }
 
     // Only serialize the direction and the range for stick motions

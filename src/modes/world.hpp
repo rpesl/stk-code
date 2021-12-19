@@ -25,12 +25,15 @@
   * battle, etc.)
   */
 
+#include <atomic>
+#include <condition_variable>
 #include <cstring>
 #include <limits>
 #include <map>
 #include <memory>
 #include <vector>
 #include <stdexcept>
+#include <string>
 
 #include "graphics/weather.hpp"
 #include "modes/world_status.hpp"
@@ -50,14 +53,14 @@ class ItemState;
 class PhysicalObject;
 class STKPeer;
 
-namespace Scripting
-{
-    class ScriptEngine;
-}
-
 namespace irr
 {
     namespace scene { class ISceneNode; }
+}
+
+namespace RestApi
+{
+    class Server;
 }
 
 class AbortWorldUpdateException : public std::runtime_error
@@ -98,6 +101,7 @@ private:
         (const std::string &kart_ident, int index, int local_player_id,
         int global_player_id, RaceManager::KartType type,
         HandicapLevel handicap);
+    RestApi::Server& m_rest_api_server;
 
 protected:
 
@@ -204,6 +208,17 @@ protected:
     void updateAchievementModeCounters(bool start);
 
 public:
+    std::unique_ptr<WeatherData> m_weather_change;
+    bool m_rest_pause;
+    bool m_rest_resume;
+    std::unique_ptr<std::pair<std::string, int>> m_new_kart;
+    std::mutex m_mutex;
+    std::condition_variable m_cv;
+    std::atomic_bool m_finished;
+
+    std::mutex m_track_mutex;
+
+public:
                     World();
     virtual        ~World();
     // Static functions to access world:
@@ -235,6 +250,8 @@ public:
     }
     // ------------------------------------------------------------------------
     static void     clear() { memset(m_world, 0, sizeof(m_world)); }
+    // ------------------------------------------------------------------------
+//    Scripting::NetworkEvents* getNetworkEvents();
     // ------------------------------------------------------------------------
 
     // Pure virtual functions
@@ -285,7 +302,7 @@ public:
                                            int *amount );
     // ------------------------------------------------------------------------
     /** Receives notification if an item is collected. Used for easter eggs. */
-    virtual void collectedItem(const AbstractKart *kart, 
+    virtual void collectedItem(const AbstractKart *kart,
                                const ItemState *item    ) {}
     // ------------------------------------------------------------------------
     virtual void endRaceEarly() { return; }
@@ -315,7 +332,7 @@ public:
     // Other functions
     // ===============
     Highscores     *getHighscores() const;
-    Highscores     *getGPHighscores() const; 
+    Highscores     *getGPHighscores() const;
     void            schedulePause(Phase phase);
     void            scheduleUnpause();
     void            scheduleExitRace() { m_schedule_exit_race = true; }
@@ -415,6 +432,8 @@ public:
     }
     // ------------------------------------------------------------------------
     virtual bool isGoalPhase() const { return false; }
+    // ------------------------------------------------------------------------
+    void evaluateChangeRequests();
 };   // World
 
 #endif

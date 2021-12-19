@@ -66,6 +66,7 @@
 #include "replay/replay_play.hpp"
 #include "replay/replay_recorder.hpp"
 #include "scriptengine/script_engine.hpp"
+#include "rest-api/RestApi.hpp"
 #include "states_screens/dialogs/race_paused_dialog.hpp"
 #include "states_screens/race_gui_base.hpp"
 #include "states_screens/main_menu_screen.hpp"
@@ -83,10 +84,12 @@
 #include "utils/string_utils.hpp"
 
 #include <algorithm>
-#include <assert.h>
+#include <cassert>
 #include <ctime>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
+#include <graphics/particle_kind_manager.hpp>
 
 
 World* World::m_world[PT_COUNT];
@@ -125,7 +128,12 @@ World* World::m_world[PT_COUNT];
  *  after the constructor. Those functions must be called in the init()
  *  function, which is called immediately after the constructor.
  */
-World::World() : WorldStatus()
+World::World()
+: WorldStatus()
+, m_rest_api_server(RaceManager::get()->getServer())
+, m_rest_pause(false)
+, m_rest_resume(false)
+, m_finished(false)
 {
     if (m_process_type == PT_MAIN)
         GUIEngine::getDevice()->setResizable(true);
@@ -182,7 +190,7 @@ void World::init()
     Track *track = track_manager->getTrack(RaceManager::get()->getTrackName());
     if (m_process_type == PT_MAIN)
     {
-        Scripting::ScriptEngine::getInstance<Scripting::ScriptEngine>();
+        Scripting::ScriptEngine::create();
         if(!track)
         {
             std::ostringstream msg;
@@ -279,7 +287,7 @@ void World::init()
     main_loop->renderGUI(7200);
     if (m_process_type == PT_MAIN && UserConfigParams::m_particles_effects > 1)
     {
-        Weather::getInstance<Weather>();   // create Weather instance
+        Weather::create();   // create Weather instance
     }
 
     if (Camera::getNumCameras() == 0)
@@ -303,6 +311,7 @@ void World::init()
         initTeamArrows(m_karts[i].get());
 
     main_loop->renderGUI(7300);
+    m_rest_api_server.startRaceListeners();
 }   // init
 
 //-----------------------------------------------------------------------------
@@ -605,6 +614,7 @@ Controller* World::loadAIController(AbstractKart* kart)
 //-----------------------------------------------------------------------------
 World::~World()
 {
+    m_rest_api_server.stopRaceListeners();
     if (m_process_type == PT_MAIN)
     {
         GUIEngine::getDevice()->setResizable(false);
@@ -673,7 +683,9 @@ World::~World()
     Physics::destroy();
 
     if (m_process_type == PT_MAIN)
+    {
         Scripting::ScriptEngine::kill();
+    }
 
     m_world[m_process_type] = NULL;
 
@@ -1800,4 +1812,41 @@ void World::updateAchievementModeCounters(bool start)
     if (RaceManager::get()->hasGhostKarts())
         PlayerManager::increaseAchievement(start ? ACS::WITH_GHOST_STARTED : ACS::WITH_GHOST_FINISHED,1);
 } // updateAchievementModeCounters
+
+void World::evaluateChangeRequests()
+{
+    if (!m_finished)
+    {
+        if (m_weather_change)
+        {
+            Weather *weather = Weather::getInstance();
+            weather->change(m_weather_change->particles, m_weather_change->sound, m_weather_change->lightning);
+            irr_driver->setClearbackBufferColor(m_weather_change->skyColorAsARGB);
+            Track::getCurrentTrack()->resetSkyBox();
+            m_weather_change.reset();
+        }
+        if (m_rest_pause)
+        {
+            m_rest_pause = false;
+            escapePressed();
+        }
+        if (m_rest_resume)
+        {
+            m_rest_resume = false;
+            GUIEngine::ModalDialog::dismiss();
+        }
+        if (m_new_kart)
+        {
+            const auto& [type, kartId] = *m_new_kart;
+            AbstractKart& kart = *getKart(kartId);
+            kart.changeKart(type, kart.getHandicap(), kart.getKartModel()->getRenderInfo());
+            m_new_kart.reset();
+        }
+        m_finished = true;
+        std::unique_lock<std::mutex> lock(m_mutex);
+        lock.unlock();
+        m_cv.notify_all();
+    }
+}
+
 #undef ACS

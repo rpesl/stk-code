@@ -261,6 +261,8 @@ public:
         return m_hue_settings[hue];
     }
     // ------------------------------------------------------------------------
+    const std::vector<float>& getHueSettings() const noexcept { return m_hue_settings; };
+    // ------------------------------------------------------------------------
     /** Returns if this material should trigger a rescue if a kart
      *  crashes against it. */
     CollisionReaction  getCollisionReaction() const { return m_collision_reaction; }
@@ -307,6 +309,16 @@ public:
     /** Returns the name of a special sfx to play while a kart is on this
      *  terrain. The string will be "" if no special sfx exists. */
     const std::string &getSFXName() const { return m_sfx_name; }
+    // ------------------------------------------------------------------------
+    float getSfxMinSpeed() const noexcept {return m_sfx_min_speed; }
+    // ------------------------------------------------------------------------
+    float getSfxMaxSpeed() const noexcept {return m_sfx_max_speed; }
+    // ------------------------------------------------------------------------
+    float getSfxMinPitch() const noexcept {return m_sfx_min_pitch; }
+    // ------------------------------------------------------------------------
+    float getSfxMaxPitch() const noexcept {return m_sfx_max_pitch; }
+    // ------------------------------------------------------------------------
+    float getSfxPitchPerSpeed() const noexcept {return m_sfx_pitch_per_speed; }
     // ------------------------------------------------------------------------
     /** \brief Get the kind of particles that are to be used on this material,
      *  in the given conditions.
@@ -382,10 +394,15 @@ public:
             return empty;
         return m_container_id;
     }
+    // ------------------------------------------------------------------------
+    bool hasTextureCompression() const noexcept { return m_tex_compression; }
+    // ------------------------------------------------------------------------
+    bool hasUClamp() const noexcept;
+    // ------------------------------------------------------------------------
+    bool hasVClamp() const noexcept;
 };
 
 
 #endif
 
 /* EOF */
-

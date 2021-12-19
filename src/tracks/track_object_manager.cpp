@@ -49,17 +49,20 @@ void TrackObjectManager::add(const XMLNode &xml_node, scene::ISceneNode* parent,
                              ModelDefinitionLoader& model_def_loader,
                              TrackObject* parent_library)
 {
+    add(new TrackObject(xml_node, parent, model_def_loader, parent_library));
+}   // add
+
+void TrackObjectManager::add(TrackObject* track_object)
+{
     try
     {
-        TrackObject *obj = new TrackObject(xml_node, parent, model_def_loader, parent_library);
-        m_all_objects.push_back(obj);
-        if(obj->isDriveable())
-            m_driveable_objects.push_back(obj);
+        m_all_objects.push_back(track_object);
+        if(track_object->isDriveable())
+            m_driveable_objects.push_back(track_object);
     }
     catch (std::exception& e)
     {
-        Log::warn("TrackObjectManager", "Could not load track object. Reason : %s",
-                  e.what());
+        Log::warn("TrackObjectManager", "Could not load track object. Reason : %s", e.what());
     }
 }   // add
 
@@ -287,6 +290,25 @@ void TrackObjectManager::insertDriveableObject(TrackObject* object)
  */
 void TrackObjectManager::removeObject(TrackObject* obj)
 {
+    for (TrackObject* trackObject : m_all_objects)
+    {
+        trackObject->removeChild(obj);
+    }
     m_all_objects.remove(obj);
+    for (TrackObject* child : obj->getChildren())
+    {
+        removeObject(child);
+    }
+
+#ifdef DEBUG
+    int count = 0;
+    for (TrackObject* trackObject : m_all_objects)
+    {
+        if (trackObject && trackObject->getParentLibrary() == obj)
+            count++;
+    }
+    assert(count == 0);
+#endif
+
     delete obj;
 }   // removeObject

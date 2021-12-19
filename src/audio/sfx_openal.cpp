@@ -34,7 +34,8 @@
 
 SFXOpenAL::SFXOpenAL(SFXBuffer* buffer, bool positional, float volume, 
                      bool owns_buffer) 
-         : SFXBase()
+: SFXBase()
+, m_can_be_deleted(false)
 {
     m_sound_buffer = buffer;
     m_sound_source = 0;
@@ -152,8 +153,6 @@ void SFXOpenAL::setSpeed(float factor)
  */
 void SFXOpenAL::reallySetSpeed(float factor)
 {
-    if (m_status != SFX_PLAYING || !SFXManager::get()->sfxAllowed()) return;
-
     if(m_status==SFX_NOT_INITIALISED)
     {
         init();
@@ -249,6 +248,7 @@ void SFXOpenAL::setLoop(bool status)
  */
 void SFXOpenAL::reallySetLoop(bool status)
 {
+    m_loop = status;
     if(m_status==SFX_NOT_INITIALISED)
     {
         init();
@@ -535,7 +535,21 @@ void SFXOpenAL::setRolloff(float rolloff)
 {
     alSourcef (m_sound_source, AL_ROLLOFF_FACTOR,  rolloff);
 }
-
 //-----------------------------------------------------------------------------
-
+float SFXOpenAL::getPitch() const
+{
+    float pitch = 0.0f;
+    alGetSourcef(m_sound_source, AL_PITCH, &pitch);
+    bool hasPitch = alGetError() == AL_NO_ERROR;
+    return hasPitch ? pitch : 1.0f;
+}
+//-----------------------------------------------------------------------------
+std::optional<std::array<float, 3>> SFXOpenAL::getPosition() const
+{
+    std::array<float, 3> position = {0.0f, 0.0f, 0.0f};
+    alGetSource3f(m_sound_source, AL_POSITION, &position[0], &position[1], &position[2]);
+    bool hasPosition = alGetError() == AL_NO_ERROR && m_positional;
+    return hasPosition ? std::optional<std::array<float, 3>>(position) : std::nullopt;
+}
+//-----------------------------------------------------------------------------
 #endif //ifdef ENABLE_SOUND

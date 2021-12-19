@@ -118,7 +118,6 @@ protected:
      *  value is <0, it indicates that the items are not switched atm. */
     int m_switch_ticks;
 
-    void deleteItem(ItemState *item);
     void switchItemsInternal(std::vector < ItemState*> &all_items);
     void setSwitchItems(const std::vector<int> &switch_items);
     void insertItemInQuad(Item *item);
@@ -133,6 +132,7 @@ public:
                                     const AbstractKart* parent,
                                     const Vec3 *server_xyz = NULL,
                                     const Vec3 *normal = NULL);
+    void deleteItem(ItemState *item);
     void           update          (int ticks);
     void           updateGraphics  (float dt);
     void           checkItemHit    (AbstractKart* kart);

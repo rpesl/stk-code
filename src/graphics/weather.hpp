@@ -23,27 +23,53 @@
 #include <vector3d.h>
 
 class SFXBase;
+class ParticleKind;
 
-class Weather : public AbstractSingleton<Weather>
+namespace irr::video
 {
+class SColor;
+}
+
+struct WeatherData
+{
+    uint32_t skyColorAsARGB;
+    std::string sound;
+    std::string particles;
+    bool lightning;
+};
+
+class Weather final : public AbstractSingleton<Weather>
+{
+public:
+    static void changeCurrentWeather(const WeatherData& weather);
+
+private:
     float m_next_lightning;
     float m_lightning;
+    bool m_stopped;
 
     SFXBase* m_thunder_sound;
     SFXBase* m_weather_sound;
 
 public:
-             Weather();
-    virtual ~Weather();
+    Weather();
+    ~Weather() override;
 
     void update(float dt);
     void playSound();
-    
+    void stop();
+    void change(const std::string& particles, const std::string& sound, bool lightning);
+    bool getLightning() const;
+    std::string getSound() const;
+    irr::video::SColor getSkyColor() const;
+    const ParticleKind* const getParticles() const;
+
     /** Set the flag that a lightning should be shown. */
     void startLightning() { m_lightning = 1.0f; }
-    bool shouldLightning() { return m_lightning > 0.0f; }
-    
-    irr::core::vector3df getIntensity();
+    bool shouldLightning() const { return m_lightning > 0.0f; }
+
+    irr::core::vector3df getIntensity() const;
+
 };
 
 #endif

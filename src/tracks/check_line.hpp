@@ -101,7 +101,9 @@ public:
         cl->m_debug_dy_dc = nullptr;
         return cl;
     }
+    // ------------------------------------------------------------------------
+    [[nodiscard]]
+    bool shouldIgnoreHeight() const noexcept { return m_ignore_height; }
 };   // CheckLine
 
 #endif
-

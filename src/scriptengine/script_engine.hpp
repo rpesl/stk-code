@@ -33,6 +33,8 @@ class TrackObjectPresentation;
 
 namespace Scripting
 {
+    static constexpr const char* MODULE_ID_MAIN_SCRIPT_FILE = "main";
+
     /** Represents a scripting function to execute after a given time */
     struct PendingTimeout : NoCopy
     {
@@ -58,21 +60,22 @@ namespace Scripting
 
     class ScriptEngine : public AbstractSingleton<ScriptEngine>
     {
+    private:
          ScriptEngine();
-        ~ScriptEngine();
 
         // Give the singleton access to the constructor.
         friend class AbstractSingleton<ScriptEngine>;
 
     public:
+        ~ScriptEngine();
 
 
-        void runFunction(bool warn_if_not_found, std::string function_name);
-        void runFunction(bool warn_if_not_found, std::string function_name,
-            std::function<void(asIScriptContext*)> callback);
-        void runFunction(bool warn_if_not_found, std::string function_name,
-            std::function<void(asIScriptContext*)> callback,
-            std::function<void(asIScriptContext*)> get_return_value);
+        void runFunction(bool warn_if_not_found, const std::string& function_name);
+        void runFunction(bool warn_if_not_found, const std::string& function_name,
+            const std::function<void(asIScriptContext*)>& callback);
+        void runFunction(bool warn_if_not_found, const std::string& function_name,
+            const std::function<void(asIScriptContext*)>& callback,
+            const std::function<void(asIScriptContext*)>& get_return_value);
         void runDelegate(asIScriptFunction* delegate_fn);
         void evalScript(std::string script_fragment);
         void cleanupCache();
@@ -91,9 +94,9 @@ namespace Scripting
         std::map<std::string, asIScriptFunction*> m_functions_cache;
         PtrVector<PendingTimeout> m_pending_timeouts;
 
+        static asIScriptEngine* createEngine();
         void configureEngine(asIScriptEngine *engine);
     };   // class ScriptEngine
 
 }
 #endif
-

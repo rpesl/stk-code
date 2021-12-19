@@ -35,9 +35,11 @@
 #include "scriptengine/scriptarray.hpp"
 #include "states_screens/dialogs/tutorial_message_dialog.hpp"
 #include "states_screens/dialogs/race_paused_dialog.hpp"
+#include "tracks/model_definition_loader.hpp"
 #include "tracks/track.hpp"
 #include "tracks/track_object.hpp"
 #include "tracks/track_object_manager.hpp"
+#include "tracks/track_object_presentation.hpp"
 #include "utils/string_utils.hpp"
 
 #include <IBillboardTextSceneNode.h>
@@ -88,6 +90,27 @@ namespace Scripting
                 script_array->SetValue(i, &tl[i]);
 
             return script_array;
+        }
+
+        void addTrackObject(std::string* name, SimpleVec3* xyz, SimpleVec3* hpr, SimpleVec3* scale)
+        {
+//            core::vector3df xyz(40 + static_cast<float>(i) * 5, -14.81, -105 + static_cast<float>(j) * 5);
+//            core::vector3df hpr(0.0, -0.0, 0.0);
+//            core::vector3df scale(1.05, 1.05, 1.05);
+            core::vector3df core_xyz(xyz->getX(), xyz->getY(), xyz->getZ());
+            core::vector3df core_hpr(hpr->getX(), hpr->getY(), hpr->getZ());
+            core::vector3df core_scale(scale->getX(), scale->getY(), scale->getZ());
+            ModelDefinitionLoader model_def_loader(::Track::getCurrentTrack());
+            TrackObjectPresentation* presentation = new TrackObjectPresentationLibraryNode(
+                    nullptr,
+                    //"stklib_pinetree_a",
+                    *name,
+                    model_def_loader,
+                    core_xyz,
+                    core_hpr,
+                    core_scale);
+            TrackObject* track_object = new TrackObject(core_xyz, core_hpr, core_scale, "static", presentation, false, nullptr);
+            ::Track::getCurrentTrack()->getTrackObjectManager()->add(track_object);
         }
 
         /** Creates a trigger at the specified location */
@@ -415,6 +438,12 @@ namespace Scripting
             * Type returned by trackObject.getLight()
             * @{
             */
+            float getEnergy(/** \cond DOXYGEN_IGNORE */void *memory /** \endcond */)
+            {
+                if (memory)
+                    return ((TrackObjectPresentationLight*)memory)->getEnergy();
+                return -1.0f;
+            }
 
             void setEnergy(float energy, /** \cond DOXYGEN_IGNORE */void *memory /** \endcond */)
             {
@@ -507,7 +536,7 @@ namespace Scripting
             asDWORD call_conv = mp ? asCALL_GENERIC : asCALL_CDECL;
             asDWORD call_conv_objlast = mp ? asCALL_GENERIC : asCALL_CDECL_OBJLAST;
             asDWORD call_conv_thiscall = mp ? asCALL_GENERIC : asCALL_THISCALL;
-            int r; // of type asERetCodes
+            [[maybe_unused]] int r; // of type asERetCodes
 
             r = engine->RegisterObjectType("TrackObject", 0, asOBJ_REF | asOBJ_NOCOUNT); assert(r >= 0);
             r = engine->RegisterObjectType("PhysicalObject", 0, asOBJ_REF | asOBJ_NOCOUNT); assert(r >= 0);
@@ -551,6 +580,11 @@ namespace Scripting
 
             r = engine->RegisterGlobalFunction("array<TrackObject@>@ getTrackObjectList()",
                                                mp ? WRAP_FN(getTrackObjectList) : asFUNCTION(getTrackObjectList),
+                                               call_conv); assert(r >= 0);
+
+            // void addTrackObject(std::string* name, SimpleVec3* xyz, SimpleVec3* hpr, SimpleVec3* scale)
+            r = engine->RegisterGlobalFunction("void addTrackObject(const string &in, const Vec3 &in, const Vec3 &in, const Vec3 &in)",
+                                               mp ? WRAP_FN(addTrackObject) : asFUNCTION(addTrackObject),
                                                call_conv); assert(r >= 0);
 
             r = engine->RegisterGlobalFunction("void exitRace()", 
@@ -747,6 +781,9 @@ namespace Scripting
                                              call_conv_objlast); assert(r >= 0);
 
             // Light
+            r = engine->RegisterObjectMethod("Light", "float getEnergy()",
+                                             mp ? WRAP_OBJ_LAST(Light::getEnergy) : asFUNCTION(Light::getEnergy),
+                                             call_conv_objlast); assert(r >= 0);
             r = engine->RegisterObjectMethod("Light", "void setEnergy(float)", 
                                              mp ? WRAP_OBJ_LAST(Light::setEnergy) : asFUNCTION(Light::setEnergy), 
                                              call_conv_objlast); assert(r >= 0);
@@ -774,4 +811,3 @@ namespace Scripting
     }
 }
 /** \endcond */
-

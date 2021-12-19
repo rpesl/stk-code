@@ -48,6 +48,21 @@
 #include <string>
 
 
+std::tuple<std::string, bool> KartProperties::getIdent(const std::string& filename)
+{
+    bool isAddon = false;
+    std::string ident = StringUtils::getBasename(StringUtils::getPath(filename));
+    // If this is an addon kart, add "addon_" to the identifier - just in
+    // case that an addon kart has the same directory name (and therefore
+    // identifier) as an included kart.
+    if(Addon::isAddon(filename))
+    {
+        ident = Addon::createAddonId(ident);
+        isAddon = true;
+    }
+    return {std::move(ident), isAddon};
+}
+
 float KartProperties::UNDEFINED = -99.9f;
 
 std::string KartProperties::getHandicapAsString(HandicapLevel h)
@@ -210,15 +225,7 @@ void KartProperties::load(const std::string &filename, const std::string &node)
     m_kart_model = std::make_shared<KartModel>(/*is_master*/true);
 
     m_root  = StringUtils::getPath(filename)+"/";
-    m_ident = StringUtils::getBasename(StringUtils::getPath(filename));
-    // If this is an addon kart, add "addon_" to the identifier - just in
-    // case that an addon kart has the same directory name (and therefore
-    // identifier) as an included kart.
-    if(Addon::isAddon(filename))
-    {
-        m_ident = Addon::createAddonId(m_ident);
-        m_is_addon = true;
-    }
+    std::tie(m_ident, m_is_addon) = getIdent(filename);
 
     try
     {
@@ -1323,4 +1330,3 @@ bool KartProperties::getSkidEnabled() const
 
 
 /* <characteristics-end kpgetter> */
-

@@ -918,3 +918,13 @@ void  Material::setMaterialProperties(video::SMaterial *m, scene::IMeshBuffer* m
 #endif
 
 } // setMaterialProperties
+
+bool Material::hasUClamp() const noexcept
+{
+    return m_clamp_tex & UCLAMP;
+}
+
+bool Material::hasVClamp() const noexcept
+{
+    return m_clamp_tex & VCLAMP;
+}

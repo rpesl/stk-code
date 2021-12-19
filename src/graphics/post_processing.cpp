@@ -38,6 +38,7 @@
 #include "io/file_manager.hpp"
 #include "karts/abstract_kart.hpp"
 #include "karts/kart_model.hpp"
+#include "karts/controller/local_player_controller.hpp"
 #include "modes/world.hpp"
 #include "physics/physics.hpp"
 #include "race/race_manager.hpp"

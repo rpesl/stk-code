@@ -2313,9 +2313,20 @@ scene::ISceneNode *IrrDriver::addLight(const core::vector3df &pos,
     return NULL;
 #endif
 }   // addLight
-
 // ----------------------------------------------------------------------------
-
+void IrrDriver::removeLight(scene::ISceneNode* light)
+{
+    if (light)
+    {
+        auto stored = std::find_if(m_lights.begin(), m_lights.end(), [light](LightNode* node) { return node == light; });
+        if (stored != m_lights.end())
+        {
+            m_lights.erase(stored);
+            light->drop();
+        }
+    }
+}
+// ----------------------------------------------------------------------------
 void IrrDriver::clearLights()
 {
     for (unsigned int i = 0; i < m_lights.size(); i++)

@@ -58,6 +58,9 @@ class XMLNode;
  */
 class KartProperties
 {
+public:
+    static std::tuple<std::string, bool> getIdent(const std::string& filename);
+
 private:
     /** Base directory for this kart. */
     std::string              m_root;
@@ -518,9 +521,8 @@ public:
     bool getSkidEnabled() const;
 
     /* <characteristics-end kpdefs> */
-    
+
     LEAK_CHECK()
 };   // KartProperties
 
 #endif
-

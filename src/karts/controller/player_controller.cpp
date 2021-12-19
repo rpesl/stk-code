@@ -46,6 +46,7 @@
 PlayerController::PlayerController(AbstractKart *kart)
                 : Controller(kart)
 {
+    setControllerName("Player");
     m_penalty_ticks = 0;
 }   // PlayerController
 

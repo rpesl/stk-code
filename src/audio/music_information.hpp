@@ -44,6 +44,7 @@ class MusicInformation : public NoCopy
 private:
     stringw                  m_composer;
     stringw                  m_title;
+    std::string              m_basename;
     std::string              m_normal_filename;
     std::string              m_fast_filename;
     std::vector<std::string> m_all_tracks;
@@ -129,6 +130,8 @@ public:
     const std::string& getFastFilename() const { return m_fast_filename; }
     // ------------------------------------------------------------------------
     float getMaxPitch() const { return m_max_pitch; }
+    // ------------------------------------------------------------------------
+    const std::string& getBasename() const noexcept { return m_basename; }
 
 };   // MusicInformation
 #endif

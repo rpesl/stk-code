@@ -38,6 +38,7 @@
  *  \param gain Gain value of this sfx.
  */
 SFXBuffer::SFXBuffer(const std::string& file,
+                     const std::string& name,
                      bool  positional,
                      float rolloff,
                      float max_dist,
@@ -50,6 +51,7 @@ SFXBuffer::SFXBuffer(const std::string& file,
     m_max_dist    = max_dist;
     m_duration    = -1.0f;
     m_file        = file;
+    m_name        = name;
 
     m_rolloff     = rolloff;
     m_positional  = positional;
@@ -226,4 +228,3 @@ bool SFXBuffer::loadVorbisBuffer(const std::string &name, ALuint buffer)
     return false;
 #endif
 }   // loadVorbisBuffer
-

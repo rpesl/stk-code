@@ -87,6 +87,8 @@ public:
                                    const std::string& layer_one_lc = "",
                                    bool full_path = false);
     Material* getLatestMaterial() { return m_materials[m_materials.size()-1]; }
+    const std::vector<Material*>& getMaterials() const noexcept { return m_materials; }
+    const std::map<std::string, Material*>& getDefaultMaterials() const noexcept { return m_default_sp_materials; }
 };   // MaterialManager
 
 extern MaterialManager *material_manager;

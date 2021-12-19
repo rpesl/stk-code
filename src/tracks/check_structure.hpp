@@ -149,7 +149,18 @@ public:
     // ------------------------------------------------------------------------
     /** Clone to child process for server usage (atm no sound or scripting). */
     virtual CheckStructure* clone() = 0;
+    // ------------------------------------------------------------------------
+    [[nodiscard]]
+    bool isActiveAtReset() const noexcept { return m_active_at_reset; }
+    // ------------------------------------------------------------------------
+    [[nodiscard]]
+    const std::vector<int>& getSameGroup() const noexcept { return m_same_group; }
+    // ------------------------------------------------------------------------
+    [[nodiscard]]
+    const std::vector<bool>& getIsActive() const noexcept { return m_is_active; }
+    // ------------------------------------------------------------------------
+    [[nodiscard]]
+    const std::vector<int>& getOtherIds() const noexcept { return m_check_structures_to_change_state; }
 };   // CheckStructure
 
 #endif
-

@@ -518,7 +518,7 @@ Skin::Skin(IGUISkin* fallback_skin)
     {
         SkinConfig::loadFromFile(skin_name, /*load_advanced_only*/fallback_skin == NULL);
     }
-    catch (std::runtime_error& e)
+    catch (const std::exception& e)
     {
         (void)e;   // avoid compiler warning
         // couldn't load skin. Try to revert to default

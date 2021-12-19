@@ -60,6 +60,8 @@ private:
 
     std::string m_id;
 
+    size_t m_unique_id;
+
     std::shared_ptr<RenderInfo>    m_render_info;
 
 protected:
@@ -138,7 +140,11 @@ public:
     {
         return m_parent_library;
     }
-
+    // ------------------------------------------------------------------------
+    const TrackObject* getParent() const noexcept
+    {
+        return m_parent_library;
+    }
     // ------------------------------------------------------------------------
     /** To finish object constructions. Called after the track model
      *  is ready. */
@@ -256,7 +262,15 @@ public:
     // ------------------------------------------------------------------------
     std::vector<TrackObject*>& getMovableChildren() { return m_movable_children; }
     // ------------------------------------------------------------------------
-    std::vector<TrackObject*>& getChildren() { return m_children; }
+    const std::vector<TrackObject*>& getChildren() { return m_children; }
+    // ------------------------------------------------------------------------
+    std::vector<std::reference_wrapper<const TrackObject>> getMovableChildren() const;
+    // ------------------------------------------------------------------------
+    std::vector<std::reference_wrapper<const TrackObject>> getChildren() const;
+    // ------------------------------------------------------------------------
+    size_t getUniqueIdentifier() const noexcept { return m_unique_id; }
+    // ------------------------------------------------------------------------
+    void removeChild(const TrackObject* child);
     // ------------------------------------------------------------------------
     void movePhysicalBodyToGraphicalNode(const core::vector3df& xyz, const core::vector3df& hpr);
     // ------------------------------------------------------------------------

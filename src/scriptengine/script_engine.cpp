@@ -37,7 +37,7 @@ extern "C"
 #include "scriptengine/scriptstdstring.hpp"
 #include "scriptengine/scriptvec3.hpp"
 #include "scriptengine/scriptarray.hpp"
-#include <string.h>
+#include <cstring>
 #include "states_screens/dialogs/tutorial_message_dialog.hpp"
 #include "tracks/track_object_manager.hpp"
 #include "tracks/track.hpp"
@@ -50,8 +50,6 @@ using namespace Scripting;
 
 namespace Scripting
 {
-    const char* MODULE_ID_MAIN_SCRIPT_FILE = "main";
-
     void AngelScript_ErrorCallback (const asSMessageInfo *msg, void *param)
     {
         const char *type = "ERR ";
@@ -66,20 +64,54 @@ namespace Scripting
 
     //Constructor, creates a new Scripting Engine using AngelScript
     ScriptEngine::ScriptEngine()
+    : m_engine(createEngine())
     {
-        // Create the script engine
-        m_engine = asCreateScriptEngine(ANGELSCRIPT_VERSION);
-        if (m_engine == NULL)
-        {
-            Log::fatal("Scripting", "Failed to create script engine.");
-        }
-
-        // The script compiler will write any compiler messages to the callback.
-        m_engine->SetMessageCallback(asFUNCTION(AngelScript_ErrorCallback), 0, asCALL_CDECL);
-
         // Configure the script engine with all the functions, 
         // and variables that the script should be able to use.
         configureEngine(m_engine);
+    }
+
+    asIScriptEngine *ScriptEngine::createEngine()
+    {
+        asIScriptEngine* engine = asCreateScriptEngine(ANGELSCRIPT_VERSION);
+        if (!engine)
+            Log::fatal("Scripting", "Failed to create script engine.");
+
+        // The script compiler will write any compiler messages to the callback.
+        engine->SetMessageCallback(asFUNCTION(AngelScript_ErrorCallback), 0, asCALL_CDECL);
+
+        // Register the script string type
+        RegisterStdString(engine); //register std::string
+        RegisterVec3(engine);      //register Vec3
+        RegisterScriptArray(engine, true);
+
+        return engine;
+    }
+
+    //-----------------------------------------------------------------------------
+    /** Configures the script engine by binding functions, enums
+    *  \param asIScriptEngine engine = engine to configure
+    */
+    void ScriptEngine::configureEngine(asIScriptEngine *engine)
+    {
+        Scripting::Track::registerScriptFunctions(m_engine);
+        Scripting::Challenges::registerScriptFunctions(m_engine);
+        Scripting::Kart::registerScriptFunctions(m_engine);
+        Scripting::Kart::registerScriptEnums(m_engine);
+        Scripting::Physics::registerScriptFunctions(m_engine);
+        Scripting::Utils::registerScriptFunctions(m_engine);
+        Scripting::GUI::registerScriptEnums(m_engine);
+        Scripting::GUI::registerScriptFunctions(m_engine);
+        Scripting::Audio::registerScriptFunctions(m_engine);
+//        Scripting::NetworkEvents::registerScriptFunctions(m_engine);
+//        Scripting::NetworkEvents::registerScriptEnums(m_engine);
+
+        // It is possible to register the functions, properties, and types in
+        // configuration groups as well. When compiling the scripts it can then
+        // be defined which configuration groups should be available for that
+        // script. If necessary a configuration group can also be removed from
+        // the engine, so that the engine configuration could be changed
+        // without having to recompile all the scripts.
     }
 
     ScriptEngine::~ScriptEngine()
@@ -272,60 +304,11 @@ namespace Scripting
     }
 
     //-----------------------------------------------------------------------------
-    
-    /*
-    void ScriptEngine::runMethod(asIScriptObject* obj, std::string methodName)
-    {
-        asITypeInfo* type = obj->GetObjectType();
-        asIScriptFunction* method = type->GetMethodByName(methodName.c_str());
-        if (method == NULL)
-            Log::error("Scripting", ("runMethod: object does not implement method " + methodName).c_str());
-
-
-        asIScriptContext *ctx = m_engine->CreateContext();
-        if (ctx == NULL)
-        {
-            Log::error("Scripting", "runMethod: Failed to create the context.");
-            //m_engine->Release();
-            return;
-        }
-
-        int r = ctx->Prepare(method);
-        if (r < 0)
-        {
-            Log::error("Scripting", "runMethod: Failed to prepare the context.");
-            ctx->Release();
-            return;
-        }
-
-        // Execute the function
-        r = ctx->Execute();
-        if (r != asEXECUTION_FINISHED)
-        {
-            // The execution didn't finish as we had planned. Determine why.
-            if (r == asEXECUTION_ABORTED)
-            {
-                Log::error("Scripting", "The script was aborted before it could finish. Probably it timed out.");
-            }
-            else if (r == asEXECUTION_EXCEPTION)
-            {
-                Log::error("Scripting", "The script ended with an exception.");
-            }
-            else
-            {
-                Log::error("Scripting", "The script ended for some unforeseen reason (%i)", r);
-            }
-        }
-
-        ctx->Release();
-    }
-    */
-    //-----------------------------------------------------------------------------
 
     /** runs the specified script
     *  \param string scriptName = name of script to run
     */
-    void ScriptEngine::runFunction(bool warn_if_not_found, std::string function_name)
+    void ScriptEngine::runFunction(bool warn_if_not_found, const std::string& function_name)
     {
         std::function<void(asIScriptContext*)> callback;
         std::function<void(asIScriptContext*)> get_return_value;
@@ -334,8 +317,8 @@ namespace Scripting
 
     //-----------------------------------------------------------------------------
 
-    void ScriptEngine::runFunction(bool warn_if_not_found, std::string function_name,
-        std::function<void(asIScriptContext*)> callback)
+    void ScriptEngine::runFunction(bool warn_if_not_found, const std::string& function_name,
+        const std::function<void(asIScriptContext*)>& callback)
     {
         std::function<void(asIScriptContext*)> get_return_value;
         runFunction(warn_if_not_found, function_name, callback, get_return_value);
@@ -346,9 +329,9 @@ namespace Scripting
     /** runs the specified script
     *  \param string scriptName = name of script to run
     */
-    void ScriptEngine::runFunction(bool warn_if_not_found, std::string function_name,
-        std::function<void(asIScriptContext*)> callback,
-        std::function<void(asIScriptContext*)> get_return_value)
+    void ScriptEngine::runFunction(bool warn_if_not_found, const std::string& function_name,
+        const std::function<void(asIScriptContext*)>& callback,
+        const std::function<void(asIScriptContext*)>& get_return_value)
     {
         int r; //int for error checking
 
@@ -487,35 +470,6 @@ namespace Scripting
         }
         m_functions_cache.clear();
         m_engine->DiscardModule(MODULE_ID_MAIN_SCRIPT_FILE);
-    }
-
-    //-----------------------------------------------------------------------------
-    /** Configures the script engine by binding functions, enums
-    *  \param asIScriptEngine engine = engine to configure
-    */
-    void ScriptEngine::configureEngine(asIScriptEngine *engine)
-    {
-        // Register the script string type
-        RegisterStdString(engine); //register std::string
-        RegisterVec3(engine);      //register Vec3
-        RegisterScriptArray(engine, true);
-
-        Scripting::Track::registerScriptFunctions(m_engine);
-        Scripting::Challenges::registerScriptFunctions(m_engine);
-        Scripting::Kart::registerScriptFunctions(m_engine);
-        Scripting::Kart::registerScriptEnums(m_engine);
-        Scripting::Physics::registerScriptFunctions(m_engine);
-        Scripting::Utils::registerScriptFunctions(m_engine);
-        Scripting::GUI::registerScriptEnums(m_engine);
-        Scripting::GUI::registerScriptFunctions(m_engine);
-        Scripting::Audio::registerScriptFunctions(m_engine);
-
-        // It is possible to register the functions, properties, and types in 
-        // configuration groups as well. When compiling the scripts it can then
-        // be defined which configuration groups should be available for that
-        // script. If necessary a configuration group can also be removed from
-        // the engine, so that the engine configuration could be changed 
-        // without having to recompile all the scripts.
     }
 
     //-----------------------------------------------------------------------------

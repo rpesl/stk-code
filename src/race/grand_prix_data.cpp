@@ -384,7 +384,7 @@ bool GrandPrixData::writeToFile()
 
         return false;
     }
-    catch (std::runtime_error& e)
+    catch (const std::exception& e)
     {
         Log::error("GrandPrixData",
                    "Failed to write grand prix to '%s'; cause: %s",

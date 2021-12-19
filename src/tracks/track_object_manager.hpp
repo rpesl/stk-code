@@ -59,6 +59,7 @@ public:
     void add(const XMLNode &xml_node, scene::ISceneNode* parent,
              ModelDefinitionLoader& model_def_loader,
              TrackObject* parent_library);
+    void add(TrackObject* track_object);
     void updateGraphics(float dt);
     void update(float dt);
     void resetAfterRewind();

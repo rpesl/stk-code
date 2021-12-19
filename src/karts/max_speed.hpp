@@ -21,6 +21,7 @@
 
 #include "utils/types.hpp"
 #include <limits>
+#include <optional>
 
 /** \defgroup karts */
 
@@ -202,6 +203,12 @@ public:
     void  saveState(BareNetworkString *buffer) const;
     void  rewindTo(BareNetworkString *buffer);
     // ------------------------------------------------------------------------
+    [[nodiscard]]
+    float getMinSpeed() const noexcept
+    {
+        return m_min_speed;
+    }
+    // ------------------------------------------------------------------------
     /** Sets the minimum speed a kart should have. This is used to guarantee
      *  that e.g. zippers on ramps will always fast enough for the karts to
      *  reach the other end. If set to a negative number, it will have
@@ -213,5 +220,63 @@ public:
     // ------------------------------------------------------------------------
     /** Returns the additional engine force. */
     float getCurrentAdditionalEngineForce() const { return m_add_engine_force;}
+    // ------------------------------------------------------------------------
+    template<int ID>
+    [[nodiscard]]
+    bool isIncreaseActive() const noexcept
+    {
+        static_assert(MS_INCREASE_MIN <= ID && ID < MS_INCREASE_MAX);
+        return m_speed_increase[ID].isActive();
+    }
+    // ------------------------------------------------------------------------
+    template<int ID>
+    [[nodiscard]]
+    std::optional<int> getIncreaseTimeLeft() const noexcept
+    {
+        static_assert(MS_INCREASE_MIN <= ID && ID < MS_INCREASE_MAX);
+        int timeLeft = m_speed_increase[ID].getTimeLeft();
+        return timeLeft < 0 ? std::nullopt : std::optional<int>(timeLeft);
+    }
+    // ------------------------------------------------------------------------
+    template<int ID>
+    [[nodiscard]]
+    float getSpeedIncrease() const noexcept
+    {
+        static_assert(MS_INCREASE_MIN <= ID && ID < MS_INCREASE_MAX);
+        return m_speed_increase[ID].getSpeedIncrease();
+    }
+    // ------------------------------------------------------------------------
+    template<int ID>
+    [[nodiscard]]
+    float getEngineForceIncrease() const noexcept
+    {
+        static_assert(MS_INCREASE_MIN <= ID && ID < MS_INCREASE_MAX);
+        return m_speed_increase[ID].getEngineForce();
+    }
+    // --------------------------------------------------------------------
+    template<int ID>
+    [[nodiscard]]
+    bool isDecreaseActive() const
+    {
+        static_assert(MS_DECREASE_MIN <= ID && ID < MS_DECREASE_MAX);
+        return m_speed_decrease[ID].isActive();
+    }
+    // --------------------------------------------------------------------
+    template<int ID>
+    [[nodiscard]]
+    std::optional<int> getDecreaseTimeLeft() const noexcept
+    {
+        static_assert(MS_DECREASE_MIN <= ID && ID < MS_DECREASE_MAX);
+        int timeLeft = m_speed_decrease[ID].getTimeLeft();
+        return timeLeft < 0 ? std::nullopt : std::optional<int>(timeLeft);
+    }
+    // ------------------------------------------------------------------------
+    template<int ID>
+    [[nodiscard]]
+    float getSlowdownFraction() const noexcept
+    {
+        static_assert(MS_DECREASE_MIN <= ID && ID < MS_DECREASE_MAX);
+        return m_speed_decrease[ID].getSlowdownFraction();
+    }
 };   // MaxSpeed
 #endif

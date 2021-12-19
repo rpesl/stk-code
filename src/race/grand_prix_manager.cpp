@@ -92,7 +92,7 @@ void GrandPrixManager::load(const std::string& filename, enum GrandPrixData::GPG
                    "Grand Prix '%s' loaded from %s",
                    gp->getId().c_str(), filename.c_str());
     }
-    catch (std::runtime_error& e)
+    catch (const std::exception& e)
     {
         if (gp != NULL)
             delete gp;

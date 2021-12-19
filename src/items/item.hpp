@@ -123,8 +123,6 @@ protected:
     friend class ItemManager;
     friend class NetworkItemManager;
     // ------------------------------------------------------------------------
-    virtual void setType(ItemType type) { m_type = type; }
-    // ------------------------------------------------------------------------
     // Some convenient functions for the AI only
     friend class SkiddingAI;
     friend class TestAI;
@@ -210,6 +208,9 @@ public:
         }
     }   // reset
 
+    // ------------------------------------------------------------------------
+    void setType(ItemType type) { m_type = type; }
+    void setOriginalType(ItemType type) { m_original_type = type; }
     // -----------------------------------------------------------------------
     /** Switches an item to be of a different type. Used for the switch
      *  powerup.
@@ -314,6 +315,16 @@ public:
     }
     // ------------------------------------------------------------------------
     void saveCompleteState(BareNetworkString* buffer) const;
+    // ------------------------------------------------------------------------
+    [[nodiscard]] int getUsedUpCounter() const noexcept
+    {
+        return m_used_up_counter;
+    }
+    // ------------------------------------------------------------------------
+    void setUsedUpCounter(int usedUpCounter)
+    {
+        m_used_up_counter = usedUpCounter;
+    }
 };   // class ItemState
 
 // ============================================================================

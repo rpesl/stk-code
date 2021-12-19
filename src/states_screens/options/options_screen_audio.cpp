@@ -156,19 +156,8 @@ void OptionsScreenAudio::eventCallback(Widget* widget, const std::string& name, 
     {
         CheckBoxWidget* w = dynamic_cast<CheckBoxWidget*>(widget);
 
-        UserConfigParams::m_music = w->getState();
         Log::info("OptionsScreenAudio", "Music is now %s", ((bool) UserConfigParams::m_music) ? "on" : "off");
-
-        if(w->getState() == false)
-        {
-            music_manager->stopMusic();
-            getWidget<SpinnerWidget>("music_volume")->setActive(false);
-        }
-        else
-        {
-            music_manager->startMusic();
-            getWidget<SpinnerWidget>("music_volume")->setActive(true);
-        }
+        music_manager->setMusicEnabled(w->getState());
     }
     else if(name == "sfx_enabled")
     {
@@ -196,4 +185,3 @@ void OptionsScreenAudio::unloaded()
 }   // unloaded
 
 // -----------------------------------------------------------------------------
-

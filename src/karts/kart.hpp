@@ -350,7 +350,7 @@ public:
                                     int fade_out_time) OVERRIDE;
     // ----------------------------------------------------------------------------------------
     virtual void   instantSpeedIncrease(unsigned int category, float add_max_speed,
-                                    float speed_boost, float engine_force, 
+                                    float speed_boost, float engine_force,
                                     int duration, int fade_out_time) OVERRIDE;
     // ----------------------------------------------------------------------------------------
     virtual void   setSlowdown(unsigned int category, float max_speed_fraction,
@@ -593,7 +593,30 @@ public:
      *  indicating that this kart has really finished the race. */
     int getNetworkConfirmedFinishTicks() const OVERRIDE
                                    { return m_network_confirmed_finish_ticks; }
-
+    // ------------------------------------------------------------------------
+    [[nodiscard]]
+    float getNitroConsumptionPerTick() const noexcept
+    {
+        return m_consumption_per_tick;
+    }
+    // ------------------------------------------------------------------------
+    [[nodiscard]]
+    bool hasBubblegum() const noexcept
+    {
+        return m_bubblegum_ticks > 0;
+    }
+    // ------------------------------------------------------------------------
+    [[nodiscard]]
+    float getLean() const noexcept
+    {
+        return m_current_lean;
+    }
+    // ------------------------------------------------------------------------
+    [[nodiscard]]
+    const MaxSpeed& getMaxSpeed() const noexcept
+    {
+        return *m_max_speed;
+    }
 };   // Kart
 
 

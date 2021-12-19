@@ -144,7 +144,11 @@ void TrackObjectPresentationSceneNode::setEnable(bool enabled)
     if (m_node != NULL && (!enabled || !m_force_always_hidden))
         m_node->setVisible(enabled);
 }   // setEnable
-
+// ----------------------------------------------------------------------------
+bool TrackObjectPresentationSceneNode::isEnabled() const
+{
+    return m_node && m_node->isVisible();
+}
 // ----------------------------------------------------------------------------
 void TrackObjectPresentationSceneNode::reset()
 {
@@ -231,6 +235,124 @@ TrackObjectPresentationLibraryNode::TrackObjectPresentationLibraryNode(
         {
             Log::error("TrackObjectPresentationLibraryNode",
                 "Cannot find library '%s'", lib_node_path.c_str());
+            return;
+        }
+
+        if (libroot == NULL)
+        {
+            Log::error("TrackObjectPresentationLibraryNode",
+                       "Cannot find library '%s'", lib_node_path.c_str());
+            return;
+        }
+
+        std::string unique_id = StringUtils::insertValues("library/%s", name.c_str());
+        file_manager->pushTextureSearchPath(lib_path + "/", unique_id);
+        file_manager->pushModelSearchPath(lib_path);
+        material_manager->pushTempMaterial(lib_path + "/materials.xml");
+#ifndef SERVER_ONLY
+        if (CVS->isGLSL())
+        {
+            SP::SPShaderManager::get()->loadSPShaders(lib_path);
+        }
+#endif
+        model_def_loader.addToLibrary(name, libroot);
+
+        // Load LOD groups
+        const XMLNode *lod_xml_node = libroot->getNode("lod");
+        if (lod_xml_node != NULL)
+        {
+            for (unsigned int i = 0; i < lod_xml_node->getNumNodes(); i++)
+            {
+                const XMLNode* lod_group_xml = lod_xml_node->getNode(i);
+                for (unsigned int j = 0; j < lod_group_xml->getNumNodes(); j++)
+                {
+                    model_def_loader.addModelDefinition(lod_group_xml->getNode(j));
+                }
+            }
+        }
+    }
+    else
+    {
+        libroot = model_def_loader.getLibraryNodes()[name];
+        assert(libroot != NULL);
+        // LOD definitions are already created, don't create them again
+        create_lod_definitions = false;
+    }
+
+    m_node->setPosition(m_init_xyz);
+    m_node->setRotation(m_init_hpr);
+    m_node->setScale(m_init_scale);
+    m_node->updateAbsolutePosition();
+
+    assert(libroot != NULL);
+    Track::getCurrentTrack()->loadObjects(libroot, lib_path, model_def_loader,
+                                          create_lod_definitions, m_node,
+                                          parent);
+    m_parent = parent;
+}   // TrackObjectPresentationLibraryNode
+
+// ----------------------------------------------------------------------------
+
+TrackObjectPresentationLibraryNode::TrackObjectPresentationLibraryNode(
+        TrackObject* parent,
+        const std::string& name,
+        ModelDefinitionLoader& model_def_loader,
+        const core::vector3df& xyz,
+        const core::vector3df& hpr,
+        const core::vector3df& scale)
+        : TrackObjectPresentationSceneNode(xyz, hpr, scale)
+{
+    m_parent = NULL;
+    m_start_executed = false;
+    m_reset_executed = false;
+
+    m_name = name;
+
+    m_node = irr_driver->getSceneManager()->addEmptySceneNode();
+#ifdef DEBUG
+    m_node->setName(("libnode_" + name).c_str());
+#endif
+
+    XMLNode* libroot;
+    std::string lib_path =
+            file_manager->getAsset(FileManager::LIBRARY, name) + "/";
+
+    bool create_lod_definitions = true;
+
+    if (!model_def_loader.containsLibraryNode(name))
+    {
+        Track* track = Track::getCurrentTrack();
+        std::string local_lib_node_path;
+        std::string local_script_file_path;
+        if (track != NULL)
+        {
+            local_lib_node_path = track->getTrackFile("library/" + name + "/node.xml");
+            local_script_file_path = track->getTrackFile("library/" + name + "/scripting.as");
+        }
+        std::string lib_node_path = lib_path + "node.xml";
+        std::string lib_script_file_path = lib_path + "scripting.as";
+
+        if (local_lib_node_path.size() > 0 && file_manager->fileExists(local_lib_node_path))
+        {
+            lib_path = track->getTrackFile("library/" + name);
+            libroot = file_manager->createXMLTree(local_lib_node_path);
+            if (track != NULL)
+            {
+                Scripting::ScriptEngine::getInstance()->loadScript(local_script_file_path, false);
+            }
+        }
+        else if (file_manager->fileExists(lib_node_path))
+        {
+            libroot = file_manager->createXMLTree(lib_node_path);
+            if (track != NULL)
+            {
+                Scripting::ScriptEngine::getInstance()->loadScript(lib_script_file_path, false);
+            }
+        }
+        else
+        {
+            Log::error("TrackObjectPresentationLibraryNode",
+                       "Cannot find library '%s'", lib_node_path.c_str());
             return;
         }
 
@@ -701,6 +823,7 @@ TrackObjectPresentationSound::TrackObjectPresentationSound(
     }
 
     SFXBuffer* buffer = new SFXBuffer(soundfile,
+                                      sound,
                                       true /* positional */,
                                       rolloff,
                                       max_dist,
@@ -710,6 +833,7 @@ TrackObjectPresentationSound::TrackObjectPresentationSound(
     m_sound = SFXManager::get()->createSoundSource(buffer, true, true);
     if (m_sound != NULL)
     {
+        m_sound->setCanBeDeleted(true);
         m_sound->setPosition(m_init_xyz);
         if (!trigger_when_near && m_trigger_condition.empty())
         {
@@ -792,6 +916,11 @@ void TrackObjectPresentationSound::setEnable(bool enabled)
         else
             stopSound();
     }
+}
+
+bool TrackObjectPresentationSound::isEnabled() const
+{
+    return m_enabled;
 }
 
 // ----------------------------------------------------------------------------
@@ -915,7 +1044,7 @@ TrackObjectPresentationParticles::TrackObjectPresentationParticles(
             m_emitter->setCreationRateAbsolute(0.0f);
         }
     }
-    catch (std::runtime_error& e)
+    catch (const std::exception& e)
     {
         Log::warn ("Track", "Could not load particles '%s'; cause :\n    %s",
                    path.c_str(), e.what());
@@ -1027,6 +1156,11 @@ TrackObjectPresentationLight::TrackObjectPresentationLight(
 // ----------------------------------------------------------------------------
 TrackObjectPresentationLight::~TrackObjectPresentationLight()
 {
+    if (m_node)
+    {
+        irr_driver->removeLight(m_node);
+        irr_driver->removeNode(m_node);
+    }
 }   // ~TrackObjectPresentationLight
 // ----------------------------------------------------------------------------
 void TrackObjectPresentationLight::setEnergy(float energy)
@@ -1041,15 +1175,41 @@ void TrackObjectPresentationLight::setEnergy(float energy)
 // ----------------------------------------------------------------------------
 void TrackObjectPresentationLight::setEnable(bool enabled)
 {
-    if (m_node != NULL)
+    if (m_node)
         m_node->setVisible(enabled);
-}   // setEnable
-
+} // setEnable
+// ----------------------------------------------------------------------------
+const video::SColor& TrackObjectPresentationLight::getColor() const noexcept
+{
+    return m_color;
+}
+// ----------------------------------------------------------------------------
+void TrackObjectPresentationLight::setColor(const video::SColor& color)
+{
+    m_color = color;
+    auto* node = dynamic_cast<LightNode*>(m_node);
+    if (node)
+        node->setColor(color.getRed(), color.getGreen(), color.getBlue());
+}
+// ----------------------------------------------------------------------------
+float TrackObjectPresentationLight::getDistance() const noexcept
+{
+    return m_distance;
+}
+// ----------------------------------------------------------------------------
+void TrackObjectPresentationLight::setDistance(float distance)
+{
+    m_distance = distance;
+    auto* node = dynamic_cast<LightNode*>(m_node);
+    if (node)
+        node->setRadius(distance);
+}
 // ----------------------------------------------------------------------------
 TrackObjectPresentationActionTrigger::TrackObjectPresentationActionTrigger(
                                                      const XMLNode& xml_node,
                                                      TrackObject* parent)
                                     :  TrackObjectPresentation(xml_node)
+                                    , m_enabled(true)
 {
     float trigger_distance = 1.0f;
     xml_node.get("distance", &trigger_distance);
@@ -1125,6 +1285,7 @@ TrackObjectPresentationActionTrigger::TrackObjectPresentationActionTrigger(
                                                 const std::string& script_name,
                                                 float distance) 
                                     : TrackObjectPresentation(xyz)
+                                    , m_enabled(true)
 {
     m_init_xyz             = xyz;
     m_init_hpr             = core::vector3df(0, 0, 0);

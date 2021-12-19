@@ -18,9 +18,6 @@
 
 #include "race/race_manager.hpp"
 
-#include <iostream>
-#include <algorithm>
-
 #include "challenges/unlock_manager.hpp"
 #include "config/player_manager.hpp"
 #include "config/saved_grand_prix.hpp"
@@ -28,10 +25,12 @@
 #include "config/user_config.hpp"
 #include "graphics/irr_driver.hpp"
 #include "guiengine/message_queue.hpp"
+#include "guiengine/modaldialog.hpp"
 #include "input/device_manager.hpp"
 #include "input/input_manager.hpp"
 #include "karts/abstract_kart.hpp"
 #include "karts/controller/controller.hpp"
+#include "karts/kart_properties.hpp"
 #include "karts/kart_properties_manager.hpp"
 #include "main_loop.hpp"
 #include "modes/capture_the_flag.hpp"
@@ -50,6 +49,9 @@
 #include "network/network_config.hpp"
 #include "network/network_string.hpp"
 #include "replay/replay_play.hpp"
+#include "rest-api/CurrentState.hpp"
+#include "rest-api/DataExchange.hpp"
+#include "rest-api/RestApi.hpp"
 #include "scriptengine/property_animator.hpp"
 #include "states_screens/grand_prix_cutscene.hpp"
 #include "states_screens/grand_prix_lose.hpp"
@@ -114,6 +116,8 @@ void RaceManager::clear()
 /** Constructs the race manager.
  */
 RaceManager::RaceManager()
+: m_race_result_loader(RestApi::RaceResultLoader::create())
+, m_race_observer(*m_race_result_loader, [&raceManager = *this] { return RestApi::getCurrentState(raceManager); })
 {
     // Several code depends on this, e.g. kart_properties
     assert(DIFFICULTY_FIRST == 0);
@@ -141,6 +145,7 @@ RaceManager::RaceManager()
     m_default_ai_list.clear();
     setNumPlayers(0);
     setSpareTireKartNum(0);
+    m_server = std::make_unique<RestApi::Server>(*this);
 }   // RaceManager
 
 //---------------------------------------------------------------------------------------------
@@ -152,7 +157,7 @@ RaceManager::~RaceManager()
 
 //---------------------------------------------------------------------------------------------
 /** Resets the race manager in preparation for a new race. It sets the
- *  counter of finished karts to zero. It is called by world when 
+ *  counter of finished karts to zero. It is called by world when
  *  restarting a race.
  */
 void RaceManager::reset()
@@ -283,7 +288,7 @@ void RaceManager::setNumPlayers(int players, int local_players)
  *  to HARD.
  *  \param difficulty The difficulty as string.
  */
-RaceManager::Difficulty 
+RaceManager::Difficulty
                   RaceManager::convertDifficulty(const std::string &difficulty)
 {
     if (difficulty == "novice")
@@ -401,7 +406,7 @@ void RaceManager::startNew(bool from_overworld)
                                          m_grand_prix.getId(),
                                          m_minor_mode,
                                          (unsigned int)m_player_karts.size());
-    
+
             // Saved GP only in offline mode
             if (m_continue_saved_gp)
             {
@@ -473,7 +478,7 @@ void RaceManager::startNew(bool from_overworld)
     // -----------------------------------------------------
     for(unsigned int i = 0; i < m_player_karts.size(); i++)
     {
-        KartType kt= m_player_karts[i].isNetworkPlayer() ? KT_NETWORK_PLAYER 
+        KartType kt= m_player_karts[i].isNetworkPlayer() ? KT_NETWORK_PLAYER
                                                          : KT_PLAYER;
         m_kart_status.push_back(KartStatus(m_player_karts[i].getKartName(), i,
                                            m_player_karts[i].getLocalPlayerId(),
@@ -498,7 +503,7 @@ void RaceManager::startNew(bool from_overworld)
                 m_track_number = next_track;
             m_saved_gp->loadKarts(m_kart_status);
         }
-        else 
+        else
         {
             while (m_saved_gp != NULL)
             {
@@ -691,6 +696,7 @@ void RaceManager::startNextRace()
 #endif
 
     RichPresenceNS::RichPresence::get()->update(true);
+    m_race_observer.start();
 }   // startNextRace
 
 //---------------------------------------------------------------------------------------------
@@ -868,6 +874,7 @@ void RaceManager::computeGPRanks()
  */
 void RaceManager::exitRace(bool delete_world)
 {
+    m_race_observer.stop();
     // Only display the grand prix result screen if all tracks
     // were finished, and not when a race is aborted.
     MessageQueue::discardStatic();
@@ -1016,6 +1023,7 @@ void RaceManager::kartFinishedRace(const AbstractKart *kart, float time)
     m_num_finished_karts ++;
     if(kart->getController()->isPlayerController())
         m_num_finished_players++;
+    m_race_observer.update();
 }   // kartFinishedRace
 
 //---------------------------------------------------------------------------------------------
@@ -1025,6 +1033,7 @@ void RaceManager::kartFinishedRace(const AbstractKart *kart, float time)
  */
 void RaceManager::rerunRace()
 {
+    m_race_observer.stop();
     // Subtract last score from all karts:
     for(int i=0; i<m_num_karts; i++)
     {
@@ -1032,6 +1041,7 @@ void RaceManager::rerunRace()
         m_kart_status[i].m_overall_time -= m_kart_status[i].m_last_time;
     }
     World::getWorld()->reset(true /* restart */);
+    m_race_observer.start();
 }   // rerunRace
 
 //---------------------------------------------------------------------------------------------
@@ -1251,3 +1261,80 @@ core::stringw RaceManager::getDifficultyName(Difficulty diff) const
     }
     return "";
 }   // getDifficultyName
+//---------------------------------------------------------------------------------------------
+std::optional<size_t> RaceManager::getCurrentRaceId() const
+{
+    return m_race_observer.getCurrentRaceId();
+}
+//---------------------------------------------------------------------------------------------
+void RaceManager::evaluateChangeRequests()
+{
+    if (!m_finished)
+    {
+        if (m_rest_exit)
+        {
+            World::getWorld()->scheduleExitRace();
+            GUIEngine::ModalDialog::dismiss();
+            m_rest_exit = false;
+        }
+        if (m_start_new)
+        {
+            reset();
+            InputDevice* device = input_manager->getDeviceManager()->getLatestUsedDevice();
+            StateManager::get()->createActivePlayer(PlayerManager::getCurrentPlayer(), device);
+            setNumPlayers(1, 1);
+            setNumLaps(m_start_new->numberOfLaps);
+            setMajorMode(RaceManager::MAJOR_MODE_SINGLE);
+            setMinorMode(RaceManager::MINOR_MODE_NORMAL_RACE);
+            setTrack(m_start_new->track);
+            setNumKarts(static_cast<int>(m_start_new->aiKarts.size() + 1));
+            setAIKartList(m_start_new->aiKarts);
+            setPlayerKart(0, m_start_new->kart);
+            if (m_start_new->difficulty == "EASY")
+            {
+                setDifficulty(DIFFICULTY_EASY);
+            }
+            else if (m_start_new->difficulty == "INTERMEDIATE")
+            {
+                setDifficulty(DIFFICULTY_MEDIUM);
+            }
+            else if (m_start_new->difficulty == "EXPERT")
+            {
+                setDifficulty(DIFFICULTY_HARD);
+            }
+            else if (m_start_new->difficulty == "SUPER_TUX")
+            {
+                setDifficulty(DIFFICULTY_BEST);
+            }
+            setReverseTrack(m_start_new->reverse);
+            input_manager->getDeviceManager()->setAssignMode(ASSIGN);
+            input_manager->getDeviceManager()->setSinglePlayer( StateManager::get()->getActivePlayer(0) );
+            StateManager::get()->enterGameState();
+            startNew(false);
+            m_start_new = nullptr;
+        }
+        if (m_load_kart)
+        {
+            if (kart_properties_manager->loadKart(*m_load_kart))
+            {
+                const auto* newKart = kart_properties_manager->getKartById(
+                    static_cast<int>(kart_properties_manager->getNumberOfKarts() - 1));
+                m_load_kart_result = std::make_unique<std::optional<std::string>>(newKart->getIdent());
+            }
+            else
+            {
+                m_load_kart_result = std::make_unique<std::optional<std::string>>();
+            }
+            m_load_kart = nullptr;
+        }
+        if (m_delete_kart)
+        {
+            kart_properties_manager->removeKart(*m_delete_kart);
+            m_delete_kart = nullptr;
+        }
+        m_finished = true;
+        std::unique_lock<std::mutex> lock(m_mutex);
+        lock.unlock();
+        m_cv.notify_all();
+    }
+}

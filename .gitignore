@@ -7,6 +7,11 @@ CMakeFiles/
 stk-editor/
 .vscode/
 tags.*
+.idea/
+cmake-build-debug/
+cmake-build-debug-coverage/
+cmake-build-default/
+cmake-build-release/
 
 .config/
 supertuxkart-64

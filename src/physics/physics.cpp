@@ -245,7 +245,7 @@ void Physics::update(int ticks)
             std::string scripting_function = obj->getOnKartCollisionFunction();
 
             TrackObject* to = obj->getTrackObject();
-            TrackObject* library = to->getParentLibrary();
+            const TrackObject* library = to->getParentLibrary();
             std::string lib_id;
             std::string* lib_id_ptr = NULL;
             if (library != NULL)
@@ -785,4 +785,3 @@ void Physics::draw()
 // ----------------------------------------------------------------------------
 
 /* EOF */
-

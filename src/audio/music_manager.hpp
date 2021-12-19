@@ -25,7 +25,10 @@
 #include "utils/no_copy.hpp"
 
 #include <atomic>
+#include <filesystem>
+#include <list>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -47,8 +50,8 @@ private:
     bool              m_initialized;
 
     /** Stores all music information files (read from the .music files). */
-    std::map<std::string, MusicInformation*>
-                      m_all_music;
+    std::map<std::string, MusicInformation*> m_all_music;
+    std::list<std::unique_ptr<MusicInformation>> m_all_music_store;
     float             m_master_gain;
 
     void              loadMusicInformation();
@@ -70,6 +73,7 @@ public:
     void              setMasterMusicVolume(float gain);
     void              resetTemporaryVolume();
     void              setTemporaryVolume(float gain);
+    void              setMusicEnabled(bool enabled);
     // ------------------------------------------------------------------------
     /** Returns the master volume. */
     float getMasterMusicVolume() const { return m_master_gain; }
@@ -77,8 +81,15 @@ public:
     /** Returns if the music system is initialised. */
     bool initialized() const { return m_initialized; }
     // ------------------------------------------------------------------------
+    [[nodiscard]] MusicInformation& loadAddonMusic(const std::filesystem::path& directory);
+    // ------------------------------------------------------------------------
+    void remove(const std::string& id);
+    // ------------------------------------------------------------------------
     /** Returns the information object of the current music. */
-    MusicInformation* getCurrentMusic() { return m_current_music; }
+    [[nodiscard]] MusicInformation* getCurrentMusic() noexcept { return m_current_music; }
+    [[nodiscard]] const MusicInformation* getCurrentMusic() const noexcept { return m_current_music; }
+    // ------------------------------------------------------------------------
+    [[nodiscard]] const std::map<std::string, MusicInformation*>& getAllMusic() const noexcept { return m_all_music; };
     // ------------------------------------------------------------------------
     /** Stops and removes the current music. */
     void clearCurrentMusic()
@@ -91,4 +102,3 @@ public:
 extern MusicManager* music_manager;
 
 #endif // HEADER_SOUNDMANAGER_HPP
-

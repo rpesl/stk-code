@@ -72,6 +72,7 @@ MusicInformation *MusicInformation::create(const std::string &filename)
 // ----------------------------------------------------------------------------
 MusicInformation::MusicInformation(const XMLNode *root,
                                    const std::string &filename)
+: m_basename(StringUtils::getBasename(filename))
 {
     m_title             = "";
     m_mode              = SOUND_NORMAL;

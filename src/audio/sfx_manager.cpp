@@ -30,7 +30,6 @@
 #include "utils/vs.hpp"
 
 #include <stdexcept>
-#include <algorithm>
 #include <map>
 
 #include <functional>
@@ -334,7 +333,66 @@ void SFXManager::stopThread()
         setCanBeDeleted();
     }
 }   // stopThread
-
+//----------------------------------------------------------------------------
+void SFXManager::handleRest(SFXManager& sfxManager)
+{
+    std::unique_lock lock(sfxManager.m_rest_mutex);
+    if (sfxManager.m_rest_deleted_sfx)
+    {
+        sfxManager.deleteSFX(sfxManager.m_rest_deleted_sfx);
+    }
+    if (sfxManager.m_rest_deleted_music || sfxManager.m_rest_deleted_sfx)
+    {
+        auto& commands = sfxManager.m_sfx_commands.getData();
+        auto startErase = std::remove_if(commands.begin(), commands.end(), [music = sfxManager.m_rest_deleted_music, sfx = sfxManager.m_rest_deleted_sfx] (const SFXCommand* command) {
+            bool shallDelete = command->m_music_information == music || command->m_sfx == sfx;
+            if (shallDelete)
+                delete command;
+            return shallDelete;
+        });
+        commands.erase(startErase, commands.end());
+        sfxManager.m_rest_deleted_music = nullptr;
+        sfxManager.m_rest_deleted_sfx = nullptr;
+    }
+    if (sfxManager.m_rest_change_sfx)
+    {
+        if (sfxManager.m_rest_status)
+        {
+            if (*sfxManager.m_rest_status == "PLAY")
+                sfxManager.m_rest_change_sfx->reallyPlayNow();
+            else if (*sfxManager.m_rest_status == "STOP")
+                sfxManager.m_rest_change_sfx->reallyStopNow();
+            else if (*sfxManager.m_rest_status == "PAUSE")
+                sfxManager.m_rest_change_sfx->reallyPauseNow();
+            else if (*sfxManager.m_rest_status == "RESUME")
+                sfxManager.m_rest_change_sfx->reallyResumeNow();
+            sfxManager.m_rest_status = nullptr;
+        }
+        if (sfxManager.m_rest_loop)
+        {
+            sfxManager.m_rest_change_sfx->reallySetLoop(*sfxManager.m_rest_loop);
+            sfxManager.m_rest_loop = nullptr;
+        }
+        if (sfxManager.m_rest_volume)
+        {
+            sfxManager.m_rest_change_sfx->reallySetVolume(*sfxManager.m_rest_volume);
+            sfxManager.m_rest_volume = nullptr;
+        }
+        if (sfxManager.m_rest_pitch)
+        {
+            sfxManager.m_rest_change_sfx->reallySetSpeed(*sfxManager.m_rest_pitch);
+            sfxManager.m_rest_pitch = nullptr;
+        }
+        if (sfxManager.m_rest_position)
+        {
+            sfxManager.m_rest_change_sfx->reallySetPosition(*sfxManager.m_rest_position);
+            sfxManager.m_rest_position = nullptr;
+        }
+        sfxManager.m_rest_change_sfx = nullptr;
+    }
+    lock.unlock();
+    sfxManager.m_rest_condition.notify_all();
+}
 //----------------------------------------------------------------------------
 /** This loops runs in a different threads, and starts sfx to be played.
  *  This can sometimes take up to 5 ms, so it needs to be handled in a thread
@@ -418,7 +476,12 @@ void SFXManager::mainLoop(void *obj)
                                   current->m_parameter.getX());   break;
         case SFX_LOOP:     current->m_sfx->reallySetLoop(
                              current->m_parameter.getX() != 0);   break;
-        case SFX_DELETE:     me->deleteSFX(current->m_sfx);       break;
+        case SFX_DELETE:
+            me->deleteSFX(current->m_sfx);
+            if (current->m_sfx == me->m_rest_deleted_sfx)
+                me->m_rest_deleted_sfx = nullptr;
+            current->m_sfx = nullptr;
+            break;
         case SFX_PAUSE_ALL:  me->reallyPauseAllNow();             break;
         case SFX_RESUME_ALL: me->reallyResumeAllNow();            break;
         case SFX_LISTENER:   me->reallyPositionListenerNow();     break;
@@ -474,6 +537,7 @@ void SFXManager::mainLoop(void *obj)
             me->queue(SFX_UPDATE, (SFXBase*)NULL, float(t / 1000.0));
         }
         ul = me->m_sfx_commands.acquireMutex();
+        handleRest(*me);
         PROFILER_POP_CPU_MARKER();
     }   // while
 
@@ -531,9 +595,12 @@ void SFXManager::toggleSound(const bool on)
             {
                 m_all_sfx.getData()[i]->reallyStopNow();
             }
+            else
+            {
+                m_all_sfx.getData()[i]->reallyPauseNow();
+            }
         }
         m_all_sfx.unlock();
-        pauseAll();
     }
 }   // toggleSound
 
@@ -541,7 +608,7 @@ void SFXManager::toggleSound(const bool on)
 /** Returns if sfx can be played. This means sfx are enabled and
  *  the manager is correctly initialised.
  */
-bool SFXManager::sfxAllowed()
+bool SFXManager::sfxAllowed() const
 {
     if (STKProcess::getType() != PT_MAIN)
         return false;
@@ -550,7 +617,17 @@ bool SFXManager::sfxAllowed()
     else
         return true;
 }   // sfxAllowed
-
+//----------------------------------------------------------------------------
+static std::string getSfxName(const std::filesystem::path& path)
+{
+    auto xml = std::unique_ptr<XMLNode>(file_manager->createXMLTree(path / "sfx.xml"));
+    if (!xml || xml->getName() != "sfx")
+        throw std::invalid_argument("Cannot load sfx xml file");
+    std::string filename;
+    if (xml->get("filename", &filename) == 0)
+        throw std::invalid_argument("No filename in sfx xml");
+    return StringUtils::removeExtension(filename);
+}
 //----------------------------------------------------------------------------
 /** Loads all sounds specified in the sound config file.
  */
@@ -584,6 +661,33 @@ void SFXManager::loadSfx()
     }// nend for
 
     delete root;
+
+    std::filesystem::path addonSfx(file_manager->getAddonSfxDirectory());
+    if (std::filesystem::exists(addonSfx) && std::filesystem::is_directory(addonSfx))
+    {
+        for (const auto& entry: std::filesystem::directory_iterator{addonSfx})
+        {
+            if (entry.is_directory())
+            {
+                try
+                {
+                    auto filename = getSfxName(entry);
+                    auto found = m_all_sfx_types.find(filename);
+                    if (found != m_all_sfx_types.end())
+                    {
+                        delete found->second;
+                        found->second = nullptr;
+                        m_all_sfx_types.erase(found);
+                    }
+                    loadSingleSfxLater(entry.path());
+                }
+                catch (...)
+                {
+                    std::filesystem::remove_all(entry.path());
+                }
+            }
+        }
+    }
 
     // Now load them in parallel
     const int max = (int)m_all_sfx_types.size();
@@ -624,9 +728,14 @@ SFXBuffer* SFXManager::addSingleSfx(const std::string &sfx_name,
                                     const bool         load)
 {
 
-    SFXBuffer* buffer = new SFXBuffer(sfx_file, positional, rolloff, 
+    SFXBuffer* buffer = new SFXBuffer(sfx_file, sfx_name, positional, rolloff,
                                       max_dist, gain);
 
+    if (SFXBuffer* sound = m_all_sfx_types[sfx_name])
+    {
+        Log::warn("SFXManager", "Delete duplicated sound %s", sfx_name.c_str());
+        delete sound;
+    }
     m_all_sfx_types[sfx_name] = buffer;
 
     if (!m_initialized)
@@ -648,27 +757,18 @@ SFXBuffer* SFXManager::addSingleSfx(const std::string &sfx_name,
 /** Loads a single sfx from the XML specification.
  *  \param node The XML node with the data for this sfx.
  */
-SFXBuffer* SFXManager::loadSingleSfx(const XMLNode* node,
-                                     const std::string &path,
-                                     const bool load)
+SFXBuffer* SFXManager::loadSingleSfxWithThrow(const XMLNode* node, const std::string& path, bool load)
 {
     std::string filename;
 
     if (node->get("filename", &filename) == 0)
-    {
-        Log::error("SFXManager",
-                "The 'filename' attribute is mandatory in the SFX XML file!");
-        return NULL;
-    }
+        throw std::invalid_argument("The 'filename' attribute is mandatory in the SFX XML file!");
 
     std::string sfx_name = StringUtils::removeExtension(filename);
-    
+
     if(m_all_sfx_types.find(sfx_name)!=m_all_sfx_types.end())
     {
-        Log::error("SFXManager",
-                "There is already a sfx named '%s' installed - new one is ignored.",
-                sfx_name.c_str());
-        return NULL;
+        throw std::invalid_argument("There is already a sfx named '" + sfx_name + "' installed - new one is ignored.");
     }
 
     // Only use the filename if no full path is specified. This is used
@@ -687,7 +787,42 @@ SFXBuffer* SFXManager::loadSingleSfx(const XMLNode* node,
                         load);
 
 }   // loadSingleSfx
-
+//----------------------------------------------------------------------------
+SFXBuffer* SFXManager::loadSingleSfx(const XMLNode* node, const std::string &path, bool load)
+{
+    try
+    {
+        return loadSingleSfxWithThrow(node, path, load);
+    }
+    catch (const std::invalid_argument& exception)
+    {
+        Log::error("SFXManager", exception.what());
+        return nullptr;
+    }
+}
+//----------------------------------------------------------------------------
+SFXBuffer* SFXManager::loadSingleSfx(const std::filesystem::path& path, bool load)
+{
+    auto xmlPath = path / "sfx.xml";
+    if (!std::filesystem::exists(xmlPath))
+        throw std::invalid_argument("Path \"" + xmlPath.string() + "\" does not exist");
+    auto root = std::unique_ptr<XMLNode>(file_manager->createXMLTree(xmlPath));
+    if (!root)
+        throw std::invalid_argument("Cannot load XML file \"" + path.string() + "\"");
+    if (root->getName() != "sfx")
+        throw std::invalid_argument("root element must be \"sfx\"");
+    return loadSingleSfxWithThrow(root.get(), path, load);
+}
+//----------------------------------------------------------------------------
+SFXBuffer* SFXManager::loadSingleSfxLater(const std::filesystem::path& path)
+{
+    return loadSingleSfx(path, false);
+}
+//----------------------------------------------------------------------------
+SFXBuffer* SFXManager::loadSingleSfxNow(const std::filesystem::path& path)
+{
+    return loadSingleSfx(path, true);
+}
 //----------------------------------------------------------------------------
 /** Creates a new SFX object. The memory for this object is managed completely
  *  by the SFXManager. This makes it easy to use different implementations of
@@ -794,10 +929,10 @@ void SFXManager::deleteSFXMapping(const std::string &name)
              "SFXManager::deleteSFXMapping : Warning: sfx not found in list.");
         return;
     }
-    (*i).second->unload();
-
+    i->second->unload();
+    delete i->second;
+    i->second = nullptr;
     m_all_sfx_types.erase(i);
-
 }   // deleteSFXMapping
 
 //----------------------------------------------------------------------------
@@ -875,25 +1010,21 @@ void SFXManager::reallyUpdateNow(SFXCommand *current)
  */
 void SFXManager::deleteSFX(SFXBase *sfx)
 {
-    if(sfx) sfx->reallyStopNow();
-    std::vector<SFXBase*>::iterator i;
-    
+
     // The whole block needs to be locked, otherwise the iterator
     // could become invalid.
-    m_all_sfx.lock();
-    i=std::find(m_all_sfx.getData().begin(), m_all_sfx.getData().end(), sfx);
+    auto lock = m_all_sfx.acquireMutex();
+    auto i = std::find(m_all_sfx.getData().begin(), m_all_sfx.getData().end(), sfx);
 
     if(i==m_all_sfx.getData().end())
     {
-        Log::warn("SFXManager", 
-                  "SFXManager::deleteSFX : Warning: sfx '%s' %lx not found in list.",
-                  sfx->getBuffer()->getFileName().c_str(), sfx);
-        m_all_sfx.unlock();
         return;
     }
 
+    if(sfx) sfx->reallyStopNow();
+
     m_all_sfx.getData().erase(i);
-    m_all_sfx.unlock();
+    lock.unlock();
 
     delete sfx;
 }   // deleteSFX
@@ -1121,4 +1252,3 @@ SFXBase* SFXManager::quickSound(const std::string &sound_type)
     return NULL;
 #endif
 }   // quickSound
-

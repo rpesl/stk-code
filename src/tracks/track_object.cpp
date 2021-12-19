@@ -42,6 +42,13 @@
 #include <IAnimatedMeshSceneNode.h>
 #include <ISceneManager.h>
 
+static size_t createUniqueIdentifier()
+{
+    Track* track = Track::getCurrentTrack();
+    assert(track);
+    return track->createUniqueIdentifier();
+}
+
 /** A track object: any additional object on the track. This object implements
  *  a graphics-only representation, i.e. there is no physical representation.
  *  Derived classes can implement a physical representation (see
@@ -54,6 +61,7 @@
 TrackObject::TrackObject(const XMLNode &xml_node, scene::ISceneNode* parent,
                          ModelDefinitionLoader& model_def_loader,
                          TrackObject* parent_library)
+: m_unique_id(createUniqueIdentifier())
 {
     init(xml_node, parent, model_def_loader, parent_library);
 }   // TrackObject
@@ -69,6 +77,7 @@ TrackObject::TrackObject(const core::vector3df& xyz, const core::vector3df& hpr,
                          TrackObjectPresentation* presentation,
                          bool is_dynamic,
                          const PhysicalObject::Settings* physics_settings)
+: m_unique_id(createUniqueIdentifier())
 {
     m_init_xyz        = xyz;
     m_init_hpr        = hpr;
@@ -147,6 +156,7 @@ void TrackObject::init(const XMLNode &xml_node, scene::ISceneNode* parent,
     if (!m_initially_visible)
         setEnabled(false);
 
+    bool is_movable = false;
     if (xml_node.getName() == "particle-emitter")
     {
         m_type = "particle-emitter";
@@ -160,6 +170,7 @@ void TrackObject::init(const XMLNode &xml_node, scene::ISceneNode* parent,
     else if (xml_node.getName() == "library")
     {
         xml_node.get("name", &m_name);
+        m_type = "library";
         m_presentation = new TrackObjectPresentationLibraryNode(this, xml_node, model_def_loader);
         if (parent_library != NULL)
         {
@@ -172,6 +183,7 @@ void TrackObject::init(const XMLNode &xml_node, scene::ISceneNode* parent,
         //        otherwise the sounds would be constantly heard, for networking
         //        the index of item needs to be same so we create and disable it
         //        in TrackObjectPresentationSound constructor
+        m_type = "sfx-emitter";
         m_presentation = new TrackObjectPresentationSound(xml_node, parent,
             RaceManager::get()->getNumLocalPlayers() > 1);
     }
@@ -267,7 +279,6 @@ void TrackObject::init(const XMLNode &xml_node, scene::ISceneNode* parent,
         }
 #endif
         scene::ISceneNode *glownode = NULL;
-        bool is_movable = false;
         if (lod_instance)
         {
             m_type = "lod";
@@ -328,14 +339,6 @@ void TrackObject::init(const XMLNode &xml_node, scene::ISceneNode* parent,
                                                    this);
         }
 
-        if (parent_library != NULL)
-        {
-            if (is_movable)
-                parent_library->addMovableChild(this);
-            else
-                parent_library->addChild(this);
-        }
-
         video::SColor glow;
         if (xml_node.get("glow", &glow) && glownode)
         {
@@ -368,6 +371,14 @@ void TrackObject::init(const XMLNode &xml_node, scene::ISceneNode* parent,
             btClamp(power, 0.5f, 10.0f);
             irr_driver->addForcedBloomNode(glownode, power);
         }
+    }
+
+    if (parent_library)
+    {
+        if (is_movable)
+            parent_library->addMovableChild(this);
+        else
+            parent_library->addChild(this);
     }
 
 
@@ -689,6 +700,7 @@ const core::vector3df& TrackObject::getScale() const
 
 void TrackObject::addMovableChild(TrackObject* child)
 {
+    assert(child);
     if (!m_enabled)
         child->setEnabled(false);
     m_movable_children.push_back(child);
@@ -698,6 +710,7 @@ void TrackObject::addMovableChild(TrackObject* child)
 
 void TrackObject::addChild(TrackObject* child)
 {
+    assert(child);
     if (!m_enabled)
         child->setEnabled(false);
     m_children.push_back(child);
@@ -805,4 +818,32 @@ TrackObject* TrackObject::cloneToChild()
         return to_clone;
     }
     return NULL;
-}   // joinToMainTrack
+} // cloneToChild
+// ------------------------------------------------------------------------
+std::vector<std::reference_wrapper<const TrackObject>> TrackObject::getMovableChildren() const
+{
+    std::vector<std::reference_wrapper<const TrackObject>> children;
+    children.reserve(m_movable_children.size());
+    std::transform(m_movable_children.begin(), m_movable_children.end(), std::back_inserter(children), [](TrackObject* trackObject) { return std::cref(*trackObject); });
+    return children;
+}
+// ------------------------------------------------------------------------
+std::vector<std::reference_wrapper<const TrackObject>> TrackObject::getChildren() const
+{
+    std::vector<std::reference_wrapper<const TrackObject>> children;
+    children.reserve(m_children.size());
+    for (const TrackObject* trackObject : m_children)
+    {
+        if (trackObject)
+            children.emplace_back(*trackObject);
+    }
+    return children;
+}
+// ----------------------------------------------------------------------------
+void TrackObject::removeChild(const TrackObject* child)
+{
+    auto it = std::remove_if(m_children.begin(), m_children.end(), [child](TrackObject* trackObject) { return trackObject == child; });
+    m_children.erase(it, m_children.end());
+    it = std::remove_if(m_movable_children.begin(), m_movable_children.end(), [child](TrackObject* trackObject) { return trackObject == child; });
+    m_movable_children.erase(it, m_movable_children.end());
+}

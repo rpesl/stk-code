@@ -27,9 +27,9 @@
 
 #include <stdexcept>
 
-ParticleKind::ParticleKind(const std::string &file) 
+ParticleKind::ParticleKind(const std::string &file, const std::string& name)
             : m_min_start_color(255,255,255,255),
-              m_max_start_color(255,255,255,255), m_name(file)
+              m_max_start_color(255,255,255,255), m_name(name)
 {
     // ---- Initial values to prevent readin uninitialized values
     m_max_size       = 0.5f;
@@ -230,11 +230,10 @@ Material* ParticleKind::getMaterial() const
     if (material_manager->hasMaterial(m_material_file))
     {
         Material* material = material_manager->getMaterial(m_material_file);
-        if (material == NULL ||
-            material->getTexture(true/*srgb*/,
-            material->getShaderName() == "additive" ||
-            material->getShaderName() == "alphablend" ?
-            true : false/*premul_alpha*/) == NULL)
+        std::string shader_name = material ? material->getShaderName() : "";
+        if (!material ||
+            !material->getTexture(true/*srgb*/,
+                                 shader_name == "additive" || shader_name == "alphablend"/*premul_alpha*/))
         {
             throw std::runtime_error("[ParticleKind] Cannot locate file " + m_material_file);
         }

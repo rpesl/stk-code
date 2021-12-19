@@ -36,7 +36,7 @@ public:
 
     /** Late creation, if SFX was initially disabled */
     virtual bool       init() OVERRIDE { return true;  }
-    virtual bool       isLooped() OVERRIDE { return false; }
+    [[nodiscard]] bool isLooped() const override { return false; }
     virtual void       updatePlayingSFX(float dt) OVERRIDE {}
     virtual void       setLoop(bool status) OVERRIDE {}
     virtual void       reallySetLoop(bool status) OVERRIDE {}
@@ -63,13 +63,17 @@ public:
     virtual void       reallySetVolume(float gain) OVERRIDE {}
     virtual void       setMasterVolume(float gain) OVERRIDE {}
     virtual void       reallySetMasterVolumeNow(float gain) OVERRIDE {}
-    virtual SFXStatus  getStatus() OVERRIDE { return SFX_STOPPED; }
+    [[nodiscard]] SFXStatus  getStatus() const override { return SFX_STOPPED; }
+    void setCanBeDeleted(bool canBeDeleted) override { };
+    [[nodiscard]] bool canBeDeleted() const override { return false; };
     virtual void       onSoundEnabledBack() OVERRIDE {}
     virtual void       setRolloff(float rolloff) OVERRIDE {}
     virtual SFXBuffer* getBuffer() const OVERRIDE { return NULL; }
-
+    [[nodiscard]] float getVolume() const override { return 0.0f; }
+    [[nodiscard]] float getPitch() const override { return 0.0f; }
+    [[nodiscard]] float getPlayTime() const override { return 0.0f; }
+    [[nodiscard]] std::optional<std::array<float, 3>> getPosition() const override { return std::nullopt; }
 };   // DummySFX
 
 
 #endif // HEADER_SFX_HPP
-

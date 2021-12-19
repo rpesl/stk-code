@@ -197,7 +197,7 @@ public:
 
     // ------------------------------------------------------------------------
     /** Returns the current clock mode. */
-    int     getClockMode() const { return m_clock_mode; }
+    ClockType     getClockMode() const { return m_clock_mode; }
 
     // ------------------------------------------------------------------------
     /** Returns the current race time. */

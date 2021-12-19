@@ -33,6 +33,7 @@ struct Input;
   */
 class OptionsScreenAudio : public GUIEngine::Screen, public GUIEngine::ScreenSingleton<OptionsScreenAudio>
 {
+private:
     OptionsScreenAudio();
 
 public:

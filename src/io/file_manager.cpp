@@ -18,6 +18,14 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
+#include <cstdio>
+#include <filesystem>
+#include <stdexcept>
+#include <sys/stat.h>
+#include <string>
+
+#include <irrlicht.h>
+
 #include "io/file_manager.hpp"
 
 #include "config/user_config.hpp"
@@ -36,15 +44,6 @@
 #ifdef ANDROID
 #include "io/assets_android.hpp"
 #endif
-
-#include <irrlicht.h>
-
-#include <stdio.h>
-#include <stdexcept>
-#include <sstream>
-#include <sys/stat.h>
-#include <iostream>
-#include <string>
 
 namespace irr {
     namespace io
@@ -480,6 +479,18 @@ void FileManager::addAssetsSearchPath()
     pushModelSearchPath  (m_subdir_name[MODEL]);
     pushMusicSearchPath  (m_subdir_name[MUSIC]);
 
+    std::filesystem::path addonMusic(getAddonMusicDirectory());
+    if (std::filesystem::exists(addonMusic) && std::filesystem::is_directory(addonMusic))
+    {
+        for (const auto& entry: std::filesystem::directory_iterator{addonMusic})
+        {
+            if (entry.is_directory())
+            {
+                pushMusicSearchPath(entry.path());
+            }
+        }
+    }
+
     // Add more paths from the STK_MUSIC_PATH environment variable
     if(getenv("SUPERTUXKART_MUSIC_PATH")!=NULL)
     {
@@ -511,7 +522,6 @@ FileManager::~FileManager()
 {
     // Clean up rest of file manager
     // =============================
-    popMusicSearchPath();
     popModelSearchPath();
     popTextureSearchPath();
     popTextureSearchPath();
@@ -570,7 +580,7 @@ XMLNode *FileManager::createXMLTree(const std::string &filename)
         XMLNode* node = new XMLNode(filename);
         return node;
     }
-    catch (std::runtime_error& e)
+    catch (const std::exception& e)
     {
         if (UserConfigParams::logMisc())
         {
@@ -600,7 +610,7 @@ XMLNode *FileManager::createXMLTreeFromString(const std::string & content)
         ireadfile->drop();
         return node;
     }
-    catch (std::runtime_error& e)
+    catch (const std::exception& e)
     {
         if (UserConfigParams::logMisc())
         {
@@ -707,17 +717,6 @@ void FileManager::popModelSearchPath()
         m_file_system->removeFileArchive(createAbsoluteFilename(dir));
     }
 }   // popModelSearchPath
-
-// ------------------------------------------------------------------------
-/** Removes the last added directory from the music search path.
- */
-void FileManager::popMusicSearchPath()
-{
-    if(!m_music_search_path.empty())
-    {
-        m_music_search_path.pop_back();
-    }
-}
 
 //-----------------------------------------------------------------------------
 /** Tries to find the specified file in any of the given search paths.
@@ -894,7 +893,7 @@ bool FileManager::searchTextureContainerId(std::string& container_id,
 //-----------------------------------------------------------------------------
 /** Returns the list of all directories in which music files are searched.
  */
-std::vector<std::string> FileManager::getMusicDirs() const
+const std::vector<std::string>& FileManager::getMusicDirs() const
 {
     return m_music_search_path;
 }   // getMusicDirs
@@ -1090,24 +1089,22 @@ void FileManager::checkAndCreateAddonsDir()
     m_addons_dir += "addons/";
 #endif
 
-    if(!checkAndCreateDirectory(m_addons_dir))
+    auto createDirectory = [&] (const std::string& directory) {
+        bool created = checkAndCreateDirectory(directory);
+        if (!created)
+        {
+            Log::error("FileManager", "Failed to create add-ons icon dir at '%s'.", directory.c_str());
+        }
+        return created;
+    };
+    if(!createDirectory(m_addons_dir))
     {
-        Log::error("FileManager", "Can not create add-ons dir '%s', "
-                   "falling back to '.'.", m_addons_dir.c_str());
         m_addons_dir = "./";
     }
-
-    if (!checkAndCreateDirectory(m_addons_dir + "icons/"))
-    {
-        Log::error("FileManager", "Failed to create add-ons icon dir at '%s'.",
-                   (m_addons_dir + "icons/").c_str());
-    }
-    if (!checkAndCreateDirectory(m_addons_dir + "tmp/"))
-    {
-        Log::error("FileManager", "Failed to create add-ons tmp dir at '%s'.",
-                   (m_addons_dir + "tmp/").c_str());
-    }
-
+    createDirectory(getAddonsFile("icons/"));
+    createDirectory(getAddonsFile("tmp/"));
+    createDirectory(getAddonMusicDirectory());
+    createDirectory(getAddonSfxDirectory());
 }   // checkAndCreateAddonsDir
 
 // ----------------------------------------------------------------------------
@@ -1369,11 +1366,20 @@ const std::string &FileManager::getAddonsDir() const
 /** Returns the full path of a file in the addons directory.
  *  \param name Name of the file.
  */
-std::string FileManager::getAddonsFile(const std::string &name)
+std::string FileManager::getAddonsFile(const std::string &name) const
 {
     return getAddonsDir()+name;
 }   // getAddonsFile
-
+//-----------------------------------------------------------------------------
+std::string FileManager::getAddonMusicDirectory() const
+{
+    return getAddonsFile("music");
+}
+//-----------------------------------------------------------------------------
+std::string FileManager::getAddonSfxDirectory() const
+{
+    return getAddonsFile("sfx");
+}
 //-----------------------------------------------------------------------------
 /** Returns the full path of the config directory.
  */

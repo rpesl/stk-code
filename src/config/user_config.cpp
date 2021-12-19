@@ -750,7 +750,7 @@ void UserConfig::saveConfig()
         configfile << ss.rdbuf();
         configfile.close();
     }
-    catch (std::runtime_error& e)
+    catch (const std::exception& e)
     {
         Log::error("UserConfig::saveConfig", "Failed to write config to %s, "
             "because %s", filename.c_str(), e.what());
@@ -777,4 +777,3 @@ bool UserConfigParams::logFlyable()
 // ----------------------------------------------------------------------------
 bool UserConfigParams::logMisc()
      { return (m_verbosity&LOG_MISC) == LOG_MISC;  }
-

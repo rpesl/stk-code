@@ -81,14 +81,12 @@ public:
     }   // TrackObjectPresentation
 
     // ------------------------------------------------------------------------
-    virtual ~TrackObjectPresentation() {}
+    virtual ~TrackObjectPresentation() noexcept = default;
     // ------------------------------------------------------------------------
 
     virtual void reset() {}
-    virtual void setEnable(bool enabled)
-    {
-        Log::warn("TrackObjectPresentation", "setEnable unimplemented for this presentation type");
-    }
+    virtual void setEnable(bool enabled) = 0;
+    virtual bool isEnabled() const = 0;
     virtual void updateGraphics(float dt) {}
     virtual void update(float dt) {}
     virtual void move(const core::vector3df& xyz, const core::vector3df& hpr,
@@ -153,6 +151,8 @@ public:
     }   // TrackObjectPresentationSceneNode
 
     // ------------------------------------------------------------------------
+    ~TrackObjectPresentationSceneNode() noexcept override = default;
+    // ------------------------------------------------------------------------
     virtual const core::vector3df& getPosition() const OVERRIDE;
     virtual const core::vector3df  getAbsolutePosition() const OVERRIDE;
     virtual const core::vector3df getAbsoluteCenterPosition() const OVERRIDE;
@@ -161,6 +161,7 @@ public:
     virtual void move(const core::vector3df& xyz, const core::vector3df& hpr,
         const core::vector3df& scale, bool isAbsoluteCoord) OVERRIDE;
     virtual void setEnable(bool enabled) OVERRIDE;
+    bool isEnabled() const override;
     virtual void reset() OVERRIDE;
 
     // ------------------------------------------------------------------------
@@ -199,6 +200,12 @@ public:
     TrackObjectPresentationLibraryNode(TrackObject* parent,
         const XMLNode& xml_node,
         ModelDefinitionLoader& model_def_loader);
+    TrackObjectPresentationLibraryNode(TrackObject* parent,
+                                       const std::string& name,
+                                       ModelDefinitionLoader& model_def_loader,
+                                       const core::vector3df& xyz,
+                                       const core::vector3df& hpr,
+                                       const core::vector3df& scale);
     virtual ~TrackObjectPresentationLibraryNode();
     virtual void update(float dt) OVERRIDE;
     virtual void reset() OVERRIDE
@@ -302,10 +309,12 @@ public:
     void stopSound();
 
     virtual void setEnable(bool enabled) OVERRIDE;
+    bool isEnabled() const override;
 
     // ------------------------------------------------------------------------
     /** Currently used for sound effects only, in cutscenes only atm */
     const std::string& getTriggerCondition() const { return m_trigger_condition; }
+    SFXBase* getSound() noexcept { return m_sound; }
 };   // TrackObjectPresentationSound
 
 // ============================================================================
@@ -355,6 +364,7 @@ public:
     // ------------------------------------------------------------------------
     /** Returns the trigger condition for this object. */
     std::string& getTriggerCondition() { return m_trigger_condition; }
+    const ParticleEmitter* getParticleEmitter() const noexcept { return m_emitter; }
 };   // TrackObjectPresentationParticles
 
 // ============================================================================
@@ -374,6 +384,10 @@ public:
     float getEnergy() const { return m_energy; }
     virtual void setEnable(bool enabled) OVERRIDE;
     void setEnergy(float energy);
+    const video::SColor& getColor() const noexcept;
+    void setColor(const video::SColor& color);
+    float getDistance() const noexcept;
+    void setDistance(float distance);
 };   // TrackObjectPresentationLight
 
 // ============================================================================
@@ -399,6 +413,8 @@ private:
 
     ActionTriggerType m_type;
 
+    bool m_enabled;
+
 public:
     TrackObjectPresentationActionTrigger(const XMLNode& xml_node,
                                          TrackObject* parent);
@@ -418,8 +434,14 @@ public:
      *  to avoid called update which duplicated in network rewinding. */
     virtual void setEnable(bool status) OVERRIDE
     {
+        m_enabled = status;
         m_reenable_timeout = status ? StkTime::getMonoTimeMs() :
             std::numeric_limits<uint64_t>::max();
+    }
+    // ------------------------------------------------------------------------
+    bool isEnabled() const override
+    {
+        return m_enabled;
     }
     // ------------------------------------------------------------------------
     void setReenableTimeout(float time)
@@ -431,4 +453,3 @@ public:
 
 
 #endif // TRACKOBJECTPRESENTATION_HPP
-

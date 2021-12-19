@@ -22,6 +22,9 @@
 #ifndef SINGLETON_HPP
 #define SINGLETON_HPP
 
+#include <memory>
+#include <typeinfo>
+#include <string>
 #include "utils/log.hpp"
 
 /*! \class AbstractSingleton
@@ -35,11 +38,12 @@ class AbstractSingleton
 {
     protected:
         /*! \brief Constructor */
-        AbstractSingleton() { m_singleton = NULL; }
+        AbstractSingleton() = default;
         /*! \brief Destructor */
         virtual ~AbstractSingleton()
         {
-            Log::info("Singleton", "Destroyed singleton.");
+            std::string message = std::string("Destroyed singleton of type ") + typeid(T).name();
+            Log::info("Singleton", message.c_str());
         }
 
     public:
@@ -49,38 +53,30 @@ class AbstractSingleton
          *  B::getInstance<A>() to have the instance returned as a A*.
          *  If the cast fails, a log message will notify it.
          */
-        template<typename S>
-        static S *getInstance ()
+        static void create()
         {
-            if (m_singleton == NULL)
-                m_singleton = new S;
-
-            S* result = (dynamic_cast<S*> (m_singleton));
-            if (result == NULL)
-                Log::debug("Singleton", "THE SINGLETON HAS NOT BEEN REALOCATED, IT IS NOT OF THE REQUESTED TYPE.");
-            return result;
+            if (m_singleton)
+                Log::fatal("Singleton", "THE SINGLETON HAS NOT BEEN REALLOCATED, IT IS NOT OF THE REQUESTED TYPE.");
+            m_singleton = std::unique_ptr<T>(new T);
         }
+
         /*! \brief Used to get the instance. */
-        static T *getInstance()
+        static T* getInstance()
         {
-            return m_singleton;
+            return m_singleton.get();
         }
 
         /*! \brief Used to kill the singleton, if needed. */
-        static void kill ()
+        static void kill()
         {
-            if (m_singleton)
-            {
-                delete m_singleton;
-                m_singleton = NULL;
-            }
+            m_singleton = nullptr;
         }
 
     private:
-        static T *m_singleton;
+        static std::unique_ptr<T> m_singleton;
 };
 
-template <typename T> T *AbstractSingleton<T>::m_singleton = NULL;
+template <typename T>  std::unique_ptr<T> AbstractSingleton<T>::m_singleton = nullptr;
 
 template <typename T>
 class Singleton

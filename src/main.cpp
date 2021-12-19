@@ -2343,7 +2343,7 @@ int main(int argc, char *argv[])
                         const XMLNode *xml = new XMLNode(xml_file);
                         addons_manager->initAddons(xml);
                     }
-                    catch (std::runtime_error& e)
+                    catch (const std::exception& e)
                     {
                         Log::warn("Addons", "Exception thrown when initializing add-ons manager : %s", e.what());
                     }

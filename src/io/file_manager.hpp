@@ -109,9 +109,9 @@ private:
 
     std::vector<TextureSearchPath> m_texture_search_path;
 
-    std::vector<std::string>
-                      m_model_search_path,
-                      m_music_search_path;
+    std::vector<std::string> m_model_search_path;
+    std::vector<std::string> m_music_search_path;
+
     bool              findFile(std::string& full_path,
                                const std::string& fname,
                                const std::vector<std::string>& search_path)
@@ -120,8 +120,6 @@ private:
                                const std::string& fname,
                                const std::vector<TextureSearchPath>& search_path)
                                const;
-    void              makePath(std::string& path, const std::string& dir,
-                               const std::string& fname) const;
     io::path          createAbsoluteFilename(const std::string &f);
     void              checkAndCreateConfigDir();
     void              checkAndCreateAddonsDir();
@@ -138,6 +136,13 @@ private:
                                              const char *fallback1,
                                              const char *fallback2=NULL);
 #endif
+    // ------------------------------------------------------------------------
+    /** Adds a directory to the music search path (or stack).
+     */
+    void pushMusicSearchPath(const std::string& path)
+    {
+        m_music_search_path.push_back(path);
+    }   // pushMusicSearchPath
 
 public:
                       FileManager();
@@ -158,7 +163,9 @@ public:
     bool              checkAndCreateDirectory(const std::string &path);
     bool              checkAndCreateDirectoryP(const std::string &path);
     const std::string &getAddonsDir() const;
-    std::string        getAddonsFile(const std::string &name);
+    std::string        getAddonsFile(const std::string &name) const;
+    std::string        getAddonMusicDirectory() const;
+    std::string        getAddonSfxDirectory() const;
     void checkAndCreateDirForAddons(const std::string &dir);
     bool isDirectory(const std::string &path) const;
     bool removeFile(const std::string &name) const;
@@ -167,7 +174,7 @@ public:
     bool moveDirectoryInto(std::string source, std::string target);
     // ------------------------------------------------------------------------
     bool copyFile(const std::string &source, const std::string &dest);
-    std::vector<std::string>getMusicDirs() const;
+    const std::vector<std::string>& getMusicDirs() const;
     std::string getAssetChecked(AssetType type, const std::string& name,
                                 bool abort_on_error=false) const;
     std::string getAsset(AssetType type, const std::string &name) const;
@@ -208,7 +215,6 @@ public:
     void       pushModelSearchPath(const std::string& path);
     void       popTextureSearchPath();
     void       popModelSearchPath();
-    void       popMusicSearchPath();
     void       redirectOutput();
 
     bool       fileIsNewer(const std::string& f1, const std::string& f2) const;
@@ -217,13 +223,6 @@ public:
     // ------------------------------------------------------------------------
     /** Returns the irrlicht file system. */
     irr::io::IFileSystem* getFileSystem() { return m_file_system; }
-    // ------------------------------------------------------------------------
-    /** Adds a directory to the music search path (or stack).
-     */
-    void pushMusicSearchPath(const std::string& path)
-    {
-        m_music_search_path.push_back(path);
-    }   // pushMusicSearchPath
     // ------------------------------------------------------------------------
     /** Returns the full path to a shader (this function could be modified
      *  later to allow track-specific shaders).

@@ -66,6 +66,7 @@ LocalPlayerController::LocalPlayerController(AbstractKart *kart,
                                              HandicapLevel h)
                      : PlayerController(kart)
 {
+    setControllerName("Local Player");
     m_last_crash = 0;
     m_has_started = false;
     m_handicap = h;
@@ -105,20 +106,18 @@ LocalPlayerController::~LocalPlayerController()
 void LocalPlayerController::initParticleEmitter()
 {
     // Attach Particle System
-    m_sky_particles_emitter = nullptr;
+    m_sky_particles_emitter.reset();
     Track *track = Track::getCurrentTrack();
 #ifndef SERVER_ONLY
     if (!GUIEngine::isNoGraphics() &&
         UserConfigParams::m_particles_effects > 1 &&
-        track->getSkyParticles() != NULL)
+        track->getSkyParticles() != nullptr)
     {
         track->getSkyParticles()->setBoxSizeXZ(150.0f, 150.0f);
-
-        m_sky_particles_emitter.reset(
-            new ParticleEmitter(track->getSkyParticles(),
-                                core::vector3df(0.0f, 30.0f, 100.0f),
-                                m_kart->getNode(),
-                                true));
+        m_sky_particles_emitter = std::make_unique<ParticleEmitter>(track->getSkyParticles(),
+                                                                    core::vector3df(0.0f, 30.0f, 100.0f),
+                                                                    m_kart->getNode(),
+                                                                    true);
 
         // FIXME: in multiplayer mode, this will result in several instances
         //        of the heightmap being calculated and kept in memory

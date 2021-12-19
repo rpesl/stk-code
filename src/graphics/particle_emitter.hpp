@@ -99,7 +99,7 @@ public:
     void         addHeightMapAffector(Track* t);
 
     bool         randomizeInitialY() const { return m_randomize_initial_y; }
+
+    const Vec3& getPosition() const noexcept { return m_position; }
 };
 #endif
-
-

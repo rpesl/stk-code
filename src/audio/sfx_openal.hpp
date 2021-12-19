@@ -73,6 +73,8 @@ private:
     /** How long the sfx has been playing. */
     float m_play_time;
 
+    bool m_can_be_deleted;
+
 public:
               SFXOpenAL(SFXBuffer* buffer, bool positional, float volume,
                         bool owns_buffer = false);
@@ -107,18 +109,24 @@ public:
     virtual void      setRolloff(float rolloff) OVERRIDE;
     // ------------------------------------------------------------------------
     /** Returns if this sfx is looped or not. */
-    virtual bool      isLooped()  OVERRIDE { return m_loop; }
+    [[nodiscard]] bool isLooped() const override { return m_loop; }
     // ------------------------------------------------------------------------
     /** Returns the status of this sfx. */
-    virtual SFXStatus getStatus()  OVERRIDE { return m_status; }
+    SFXStatus getStatus() const override { return m_status; }
+
+    void setCanBeDeleted(bool canBeDeleted) override { m_can_be_deleted = canBeDeleted; };
+    [[nodiscard]] bool canBeDeleted() const override { return m_can_be_deleted; };
 
     // ------------------------------------------------------------------------
     /** Returns the buffer associated with this sfx. */
     virtual SFXBuffer* getBuffer() const OVERRIDE
                                                      { return m_sound_buffer; }
+    [[nodiscard]] float getVolume() const override { return m_gain < 0.0f ? m_default_gain : m_gain; }
+    [[nodiscard]] float getPitch() const override;
+    [[nodiscard]] float getPlayTime() const override { return m_play_time; };
+    [[nodiscard]] std::optional<std::array<float, 3>> getPosition() const override;
 
 };   // SFXOpenAL
 
 #endif
 #endif // HEADER_SFX_OPENAL_HPP
-

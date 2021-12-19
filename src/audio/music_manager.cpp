@@ -19,8 +19,10 @@
 
 #include "audio/music_manager.hpp"
 
-#include <assert.h>
+#include <algorithm>
+#include <cassert>
 #include <fstream>
+#include <numeric>
 
 #ifdef ENABLE_SOUND
 #  include <AL/al.h>
@@ -32,6 +34,8 @@
 #include "audio/sfx_openal.hpp"
 #include "config/user_config.hpp"
 #include "io/file_manager.hpp"
+#include "tracks/track.hpp"
+#include "tracks/track_manager.hpp"
 #include "utils/stk_process.hpp"
 #include "utils/string_utils.hpp"
 
@@ -92,13 +96,6 @@ MusicManager::MusicManager()
 //-----------------------------------------------------------------------------
 MusicManager::~MusicManager()
 {
-    for(std::map<std::string,MusicInformation*>::iterator
-        i=m_all_music.begin(); i!=m_all_music.end(); i++)
-    {
-        delete i->second;
-        i->second = NULL;
-    }
-
 #ifdef ENABLE_SOUND
     if(m_initialized)
     {
@@ -137,7 +134,10 @@ void MusicManager::loadMusicFromOneDir(const std::string& dir)
         if(StringUtils::getExtension(*i)!="music") continue;
         MusicInformation *mi =  MusicInformation::create(*i);
         if(mi)
+        {
+            m_all_music_store.emplace_back(mi);
             m_all_music[StringUtils::getBasename(*i)] = mi;
+        }
     }   // for i
 
 } // loadMusicFromOneDir
@@ -247,6 +247,15 @@ void MusicManager::setTemporaryVolume(float gain)
 }   // setTemporaryVolume
 
 //-----------------------------------------------------------------------------
+void MusicManager::setMusicEnabled(bool enabled)
+{
+    UserConfigParams::m_music = enabled;
+    if(enabled)
+        startMusic();
+    else
+        stopMusic();
+}
+//-----------------------------------------------------------------------------
 /** Queues a command for the sfx manager to reset a temporary volume change.
  */
 void MusicManager::resetTemporaryVolume()
@@ -296,6 +305,7 @@ MusicInformation* MusicManager::getMusicInformation(const std::string& filename)
         MusicInformation *mi = MusicInformation::create(filename);
         if(mi)
         {
+            m_all_music_store.emplace_back(mi);
             SFXManager::get()->queue(SFXManager::SFX_MUSIC_DEFAULT_VOLUME, mi);
             m_all_music[basename] = mi;
         }
@@ -303,5 +313,74 @@ MusicInformation* MusicManager::getMusicInformation(const std::string& filename)
     }
     return p->second;
 }   // getMusicInformation
-
 //----------------------------------------------------------------------------
+MusicInformation& MusicManager::loadAddonMusic(const std::filesystem::path& directory)
+{
+    if (!is_directory(directory) || !directory.has_parent_path())
+        throw std::invalid_argument("Path is not a valid directory");
+    auto isMusicFile = [] (const std::filesystem::directory_entry& entry) {
+        return entry.is_regular_file() && entry.path().has_extension() && entry.path().extension() == ".music";
+    };
+    std::filesystem::path musicFile;
+    size_t count = 0;
+    for (const auto& entry : std::filesystem::directory_iterator{directory})
+    {
+        if (isMusicFile(entry))
+        {
+            count++;
+            musicFile = entry;
+        }
+    }
+    if (count != 1)
+        throw std::invalid_argument("Zip file must contain exactly one music track");
+    if (musicFile.stem() != directory.filename())
+        throw std::invalid_argument(".music file must match directory name");
+    MusicInformation* music = MusicInformation::create(musicFile);
+    if (!music)
+        throw std::invalid_argument("Cannot load music file");
+    m_all_music_store.emplace_back(music);
+    m_all_music[musicFile.filename()] = music;
+    for (size_t i = 0; i < track_manager->getNumberOfTracks(); i++)
+    {
+        Track* track = track_manager->getTrack(i);
+        track->addMusic(music);
+    }
+    return *music;
+}
+//----------------------------------------------------------------------------
+void MusicManager::remove(const std::string& id)
+{
+    auto found = m_all_music.find(id);
+    if (found != m_all_music.end())
+    {
+        m_all_music.erase(found);
+        for (size_t i = 0; i < track_manager->getNumberOfTracks(); i++)
+        {
+            Track* track = track_manager->getTrack(i);
+            track->removeMusic(found->second);
+        }
+        if (m_current_music == found->second)
+        {
+            m_current_music = nullptr;
+            Track* track = Track::getCurrentTrack();
+            if (track)
+            {
+                startMusic();
+            }
+        }
+        SFXManager::get()->m_rest_deleted_music = found->second;
+        std::unique_lock lock(SFXManager::get()->m_rest_mutex);
+        SFXManager::get()->m_rest_condition.wait(lock, [&] () -> bool {
+            return !SFXManager::get()->m_rest_deleted_music;
+        });
+        std::filesystem::path path(found->second->getNormalFilename());
+        if (path.parent_path().parent_path() == file_manager->getAddonMusicDirectory())
+        {
+            std::filesystem::remove_all(path.parent_path());
+        }
+        m_all_music_store.erase(
+            std::remove_if(m_all_music_store.begin(), m_all_music_store.end(), [music = found->second] (const auto& storedMusic) {
+                return storedMusic.get() == music;
+            }), m_all_music_store.end());
+    }
+}

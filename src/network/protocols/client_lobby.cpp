@@ -1430,8 +1430,7 @@ void ClientLobby::handleKartInfo(Event* event)
 void ClientLobby::startLiveJoinKartSelection()
 {
     NetworkKartSelectionScreen::getInstance()->setLiveJoin(true);
-    std::vector<int> all_k =
-        kart_properties_manager->getKartsInGroup("standard");
+    auto all_k = kart_properties_manager->getKartsInGroup("standard");
     std::set<std::string> karts;
     for (int kart : all_k)
     {

@@ -92,6 +92,7 @@
 #include <SMeshBuffer.h>
 
 #include <iostream>
+#include <mutex>
 #include <stdexcept>
 #include <sstream>
 #include <wchar.h>
@@ -184,7 +185,6 @@ Track::Track(const std::string &filename)
     m_all_cached_meshes.clear();
     loadTrackInfo();
 }   // Track
-
 //-----------------------------------------------------------------------------
 /** Destructor, removes quad data structures etc. */
 Track::~Track()
@@ -1755,7 +1755,7 @@ static void recursiveUpdatePosition(scene::ISceneNode *node)
 }   // recursiveUpdatePosition
 
 // ----------------------------------------------------------------------------
-static void recursiveUpdatePhysics(std::vector<TrackObject*>& tos)
+static void recursiveUpdatePhysics(const std::vector<TrackObject*>& tos)
 {
     for (TrackObject* to : tos)
     {
@@ -2041,6 +2041,20 @@ void Track::loadTrackModel(bool reverse_track, unsigned int mode_id)
     }
 
     loadObjects(root, path, model_def_loader, true, NULL, NULL);
+
+//    for (size_t i = 0; i < 10; i++)
+//    {
+//        for (size_t j = 0; j < 10; j++)
+//        {
+//            core::vector3df xyz(40 + static_cast<float>(i) * 5, 0, -105 + static_cast<float>(j) * 5);
+//            core::vector3df hpr(0.0, -0.0, 0.0);
+//            core::vector3df scale(1.05, 1.05, 1.05);
+//            TrackObjectPresentation* presentation = new TrackObjectPresentationLibraryNode(nullptr, "stklib_pinetree_a", model_def_loader, xyz, hpr, scale);
+//            TrackObject* track_object = new TrackObject(xyz, hpr, scale, "static", presentation, false, nullptr);
+//            m_track_object_manager->add(track_object);
+//        }
+//    }
+
     main_loop->renderGUI(5000);
 
     Log::info("Track", "Overall scene complexity estimated at %d", irr_driver->getSceneComplexity());
@@ -2418,7 +2432,14 @@ void Track::loadObjects(const XMLNode* root, const std::string& path,
 
     }   // for i<root->getNumNodes()
 }
-
+//-----------------------------------------------------------------------------
+void Track::removeMusic(const MusicInformation* music)
+{
+    m_music.erase(
+        std::remove_if(m_music.begin(), m_music.end(), [music] (MusicInformation* storedMusic) {
+            return storedMusic == music;
+        }), m_music.end());
+}
 //-----------------------------------------------------------------------------
 /** Handles a sky-dome or sky-box. It takes the xml node with the
  *  corresponding data for the sky and stores the corresponding data in
@@ -2968,3 +2989,20 @@ video::IImage* Track::getSkyTexture(std::string path) const
     return GE::getResizedImage(path);
 #endif
 }   // getSkyTexture
+//-----------------------------------------------------------------------------
+static std::mutex track_mutex;
+//-----------------------------------------------------------------------------
+size_t Track::createUniqueIdentifier()
+{
+    std::unique_lock lock(track_mutex);
+    return m_unique_identifier_generator++;
+}
+//-----------------------------------------------------------------------------
+void Track::resetSkyBox()
+{
+    if (m_sky_type == SKY_BOX)
+    {
+        SP::getRenderer()->removeSkyBox();
+        m_sky_type = SKY_COLOR;
+    }
+}

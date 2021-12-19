@@ -832,7 +832,7 @@ namespace StringUtils
             if (utf32[i] >= 128 || utf32[i] == '&' || utf32[i] == '<' ||
                 utf32[i] == '>' || utf32[i] == '\"' || utf32[i] == ' ')
             {
-                output << "&#x" << std::hex << std::uppercase << utf32[i] << ";";
+                output << "&#x" << std::hex << std::uppercase << static_cast<uint32_t>(utf32[i]) << ";";
             }
             else
             {

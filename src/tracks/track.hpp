@@ -287,6 +287,8 @@ private:
     bool                     m_weather_lightning;
     std::string              m_weather_sound;
 
+    size_t m_unique_identifier_generator = 0;
+
     /** A simple class to keep information about a track mode. */
     class TrackMode
     {
@@ -501,6 +503,8 @@ public:
     void               addMusic          (MusicInformation* mi)
                                                   {m_music.push_back(mi);     }
     // ------------------------------------------------------------------------
+    void removeMusic(const MusicInformation* music);
+    // ------------------------------------------------------------------------
     float              getGravity        () const {return m_gravity;          }
     // ------------------------------------------------------------------------
     /** Returns the version of the .track file. */
@@ -608,6 +612,8 @@ public:
     const std::string& getWeatherSound() {return m_weather_sound;}
     // ------------------------------------------------------------------------
     ParticleKind* getSkyParticles         () { return m_sky_particles; }
+    // ------------------------------------------------------------------------
+    void setSkyParticles(ParticleKind* sky_particles) { m_sky_particles = sky_particles; }
     // ------------------------------------------------------------------------
     /** Override track fog value to force disabled */
     void forceFogDisabled(bool v) { m_force_disable_fog = v; }
@@ -732,6 +738,10 @@ public:
     // ------------------------------------------------------------------------
     bool isOnGround(const Vec3& xyz, const Vec3& down, Vec3* hit_point,
                     Vec3* normal, bool print_warning = true);
+    // ------------------------------------------------------------------------
+    size_t createUniqueIdentifier();
+    // ------------------------------------------------------------------------
+    void resetSkyBox();
 };   // class Track
 
 #endif

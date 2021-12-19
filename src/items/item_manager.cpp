@@ -324,8 +324,8 @@ Item* ItemManager::placeItem(ItemState::ItemType type, const Vec3& xyz,
     // Make sure this subroutine is not used otherwise (since networking
     // needs to be aware of items added to the track, so this would need
     // to be added).
-    assert(World::getWorld()->getPhase() == WorldStatus::SETUP_PHASE ||
-           ProfileWorld::isProfileMode()                               );
+//    assert(World::getWorld()->getPhase() == WorldStatus::SETUP_PHASE ||
+//           ProfileWorld::isProfileMode()                               );
     ItemState::ItemType mesh_type = type;
 
     Item* item = new Item(type, xyz, normal, m_item_mesh[mesh_type],

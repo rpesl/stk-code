@@ -119,7 +119,7 @@ void UnlockManager::readAllChallengesInDirs(const std::vector<std::string>* all_
                 {
                     new_challenge = new ChallengeData(filename);
                 }
-                catch (std::runtime_error& ex)
+                catch (const std::exception& ex)
                 {
                     Log::warn("unlock_manager", "An error occurred while "
                               "loading challenge file '%s' : %s.\n"
@@ -178,7 +178,7 @@ void UnlockManager::addChallenge(const std::string& filename)
         new_challenge = new ChallengeData(filename);
         new_challenge->check();
     }
-    catch (std::runtime_error& ex)
+    catch (const std::exception& ex)
     {
         Log::warn("unlock_manager", "An error occurred while loading "
                    "challenge file '%s' : %s challenge will be ignored.",

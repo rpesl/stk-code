@@ -45,7 +45,7 @@ CMAKE_DEPENDENT_OPTION(BUILD_RECORDER "Build opengl recorder" ON
     "NOT SERVER_ONLY;NOT APPLE;NOT USE_SWITCH" OFF)
 CMAKE_DEPENDENT_OPTION(USE_SYSTEM_SQUISH "Use system Squish library instead of the built-in version, when available." ON
     "NOT SERVER_ONLY" OFF)
-CMAKE_DEPENDENT_OPTION(USE_WIIUSE "Support for wiimote input devices" ON
+CMAKE_DEPENDENT_OPTION(USE_WIIUSE "Support for wiimote input devices" OFF
     "NOT SERVER_ONLY;NOT CYGWIN;NOT USE_SWITCH;NOT MSVC" OFF)
 CMAKE_DEPENDENT_OPTION(USE_DNS_C "Build bundled dns resolver" OFF "NOT CYGWIN;NOT USE_SWITCH" ON)
 CMAKE_DEPENDENT_OPTION(USE_MOJOAL "Use bundled MojoAL instead of system OpenAL" OFF "NOT APPLE" ON)
@@ -464,7 +464,7 @@ endif()
 
 # Set some compiler options
 if(UNIX OR MINGW)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-function")
 endif()
 
@@ -623,6 +623,9 @@ else()
     add_definitions(-DENABLE_CRYPTO_MBEDTLS)
 endif()
 
+include(cmake/FindHttpLib.cmake)
+include(cmake/FindRapidJson.cmake)
+
 # Common library dependencies
 target_link_libraries(supertuxkart
     bulletdynamics
@@ -634,6 +637,15 @@ target_link_libraries(supertuxkart
     ${CURL_LIBRARIES}
     ${MCPP_LIBRARY}
     )
+
+if (OPENSSL_FOUND)
+    target_link_libraries(supertuxkart PUBLIC
+            $<$<BOOL:${HTTPLIB_IS_USING_OPENSSL}>:OpenSSL::SSL>
+            $<$<BOOL:${HTTPLIB_IS_USING_OPENSSL}>:OpenSSL::Crypto>)
+    target_compile_definitions(supertuxkart PUBLIC
+            $<$<BOOL:${HTTPLIB_IS_USING_OPENSSL}>:CPPHTTPLIB_OPENSSL_SUPPORT>
+            )
+endif()
 
 if (USE_SWITCH)
   include(cmake/FindEGL.cmake)
@@ -830,6 +842,16 @@ if(CHECK_ASSETS)
   endif()
 endif()
 
+# ==== Unit testing ====
+include(cmake/FindGoogleTest.cmake)
+set(STK_SOURCES_NO_MAIN ${STK_SOURCES})
+list(FILTER STK_SOURCES_NO_MAIN EXCLUDE REGEX "^src\\/main\\.cpp")
+file(GLOB_RECURSE TEST_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/*.cpp")
+list(FILTER TEST_SOURCES INCLUDE REGEX ${TEST_SOURCES_PATTERN})
+set(TEST_EXECUTABLE_NAME "supertuxkart-test")
+add_executable(${TEST_EXECUTABLE_NAME} ${TEST_SOURCES} ${STK_SOURCES_NO_MAIN})
+get_target_property(FINAL_LINK_LIBRARIES supertuxkart LINK_LIBRARIES)
+target_link_libraries(${TEST_EXECUTABLE_NAME} gtest_main gmock_main ${GTEST_LIBRARIES} gmock ${FINAL_LINK_LIBRARIES})
 
 # ==== Install target ====
 install(TARGETS supertuxkart RUNTIME DESTINATION ${STK_INSTALL_BINARY_DIR} BUNDLE DESTINATION .)

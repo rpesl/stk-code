@@ -127,6 +127,11 @@ public:
         assert(false);
         return 0.0f;
     }
-
+    // ------------------------------------------------------------------------
+    [[nodiscard]]
+    float getMinHeightTesting() const noexcept { return m_min_height_testing; }
+    // ------------------------------------------------------------------------
+    [[nodiscard]]
+    float getMaxHeightTesting() const noexcept { return m_max_height_testing; }
 };   // class Quad
 #endif

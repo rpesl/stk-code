@@ -89,12 +89,12 @@ ParticleKind* ParticleKindManager::getParticles(const std::string &name)
             Track* t = track_manager->getTrack(RaceManager::get()->getTrackName());
             if (t)
             {
-                ParticleKind* newkind = new ParticleKind(t->getTrackFile(name));
+                ParticleKind* newkind = new ParticleKind(t->getTrackFile(name), name);
                 m_per_track_kinds[name] = newkind;
                 return newkind;
             }
         }
-        catch (std::runtime_error& e)
+        catch (const std::exception& e)
         {
             (void)e;   // remove compiler warning
             // not found in track directory, let's try globally...
@@ -107,11 +107,11 @@ ParticleKind* ParticleKindManager::getParticles(const std::string &name)
         try
         {
             std::string path = file_manager->getAsset(FileManager::GFX,name);
-            ParticleKind* newkind = new ParticleKind(path);
+            ParticleKind* newkind = new ParticleKind(path, name);
             m_kinds[name] = newkind;
             return newkind;
         }
-        catch (std::runtime_error& e)
+        catch (const std::exception& e)
         {
             (void)e;  // avoid compiler warning
             return NULL;

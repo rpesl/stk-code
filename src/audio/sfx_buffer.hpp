@@ -51,6 +51,7 @@ private:
 
     /** The file that contains the OGG audio data */
     std::string m_file;
+    std::string m_name;
 
     /** The openal buffer id. */
     ALuint   m_buffer;
@@ -75,6 +76,7 @@ private:
 public:
 
     SFXBuffer(const  std::string& file,
+              const  std::string& name,
               bool   positional,
               float  rolloff,
               float  max_width,
@@ -112,6 +114,8 @@ public:
     /** Returns the file name of this buffer. */
     const std::string& getFileName() const { return m_file; }
     // ------------------------------------------------------------------------
+    const std::string& getName() const noexcept { return m_name; }
+    // ------------------------------------------------------------------------
     /** Sets if this buffer is positional or not. */
     void  setPositional(bool positional) { m_positional = positional; }
     // ------------------------------------------------------------------------
@@ -122,4 +126,3 @@ public:
 
 
 #endif // HEADER_SFX_BUFFER_HPP
-

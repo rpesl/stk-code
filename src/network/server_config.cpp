@@ -191,7 +191,7 @@ void writeServerConfigToDisk()
         configfile << config_xml;
         configfile.close();
     }
-    catch (std::runtime_error& e)
+    catch (const std::exception& e)
     {
         Log::error("ServerConfig", "Failed to write server config to %s, "
             "because %s", g_server_config_path.c_str(), e.what());
@@ -407,4 +407,3 @@ std::string getConfigDirectory()
 }   // getConfigDirectory
 
 }
-

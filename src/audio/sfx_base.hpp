@@ -20,6 +20,8 @@
 #ifndef HEADER_SFX_HPP
 #define HEADER_SFX_HPP
 
+#include <array>
+#include <optional>
 #include "audio/sfx_manager.hpp"
 #include "utils/no_copy.hpp"
 
@@ -53,7 +55,7 @@ public:
 
     /** Late creation, if SFX was initially disabled */
     virtual bool       init()                               = 0;
-    virtual bool       isLooped()                           = 0;
+    virtual bool       isLooped() const                     = 0;
     virtual void       updatePlayingSFX(float dt)           = 0;
     virtual void       setPosition(const Vec3 &p)           = 0;
     virtual void       reallySetPosition(const Vec3 &p)     = 0;
@@ -83,10 +85,14 @@ public:
     virtual void       onSoundEnabledBack()                 = 0;
     virtual void       setRolloff(float rolloff)            = 0;
     virtual SFXBuffer* getBuffer() const                    = 0;
-    virtual SFXStatus  getStatus()                          = 0;
-
+    virtual SFXStatus  getStatus() const                    = 0;
+    virtual void setCanBeDeleted(bool canBeDeleted) = 0;
+    [[nodiscard]] virtual bool canBeDeleted() const = 0;
+    [[nodiscard]] virtual float getVolume() const = 0;
+    [[nodiscard]] virtual float getPitch() const = 0;
+    [[nodiscard]] virtual float getPlayTime() const = 0;
+    [[nodiscard]] virtual std::optional<std::array<float, 3>> getPosition() const = 0;
 };   // SFXBase
 
 
 #endif // HEADER_SFX_HPP
-

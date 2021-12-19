@@ -203,7 +203,7 @@ void KartGFX::addEffect(KartGFXType type, const std::string &file_name,
             emitter = new ParticleEmitter(kind, position, m_kart->getNode(),
                                           false, important);
     }
-    catch (std::runtime_error& e)
+    catch (const std::exception& e)
     {
         // If an error happens, mark this emitter as non existant
         // by adding a NULL to the list (which is tested for in all

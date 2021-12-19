@@ -26,18 +26,28 @@
   * track was selected, etc.
   */
 
-#include <vector>
 #include <algorithm>
+#include <atomic>
+#include <condition_variable>
+#include <mutex>
 #include <string>
+#include <vector>
 
 #include "network/remote_kart_info.hpp"
 #include "race/grand_prix_data.hpp"
+#include "rest-api/RaceObserver.hpp"
 #include "utils/vec3.hpp"
 
 class AbstractKart;
 class NetworkString;
 class SavedGrandPrix;
 class Track;
+
+namespace RestApi
+{
+class Server;
+struct NewRace;
+}
 
 static const std::string IDENT_STD      ("STANDARD"        );
 static const std::string IDENT_TTRIAL   ("STD_TIMETRIAL"   );
@@ -359,6 +369,10 @@ private:
     bool m_has_ghost_karts;
 
     bool m_watching_replay;
+
+    std::unique_ptr<RestApi::Server> m_server;
+    std::unique_ptr<RestApi::RaceResultLoader> m_race_result_loader;
+    RestApi::RaceObserver m_race_observer;
 public:
     // ----------------------------------------------------------------------------------------
     static RaceManager* get();
@@ -369,8 +383,8 @@ public:
     // ----------------------------------------------------------------------------------------
     static void clear();
     // ----------------------------------------------------------------------------------------
-         RaceManager();
-        ~RaceManager();
+    RaceManager();
+    ~RaceManager();
 
     void reset();
     void setPlayerKart(unsigned int player_id, const std::string &kart_name);
@@ -903,6 +917,25 @@ public:
             m_minor_mode == MINOR_MODE_CAPTURE_THE_FLAG ||
             m_minor_mode == MINOR_MODE_FREE_FOR_ALL;
     }
+    // ----------------------------------------------------------------------------------------
+    [[nodiscard]]
+    std::optional<size_t> getCurrentRaceId() const;
+    // ----------------------------------------------------------------------------------------
+    [[nodiscard]]
+    RestApi::Server& getServer() noexcept { return *m_server; }
+    // ----------------------------------------------------------------------------------------
+    [[nodiscard]]
+    const RestApi::RaceResultLoader& getRaceResultLoader() const noexcept { return *m_race_result_loader; }
+    // ----------------------------------------------------------------------------------------
+    std::mutex m_mutex;
+    std::atomic<bool> m_finished = true;
+    bool m_rest_exit = false;
+    std::unique_ptr<RestApi::NewRace> m_start_new;
+    std::unique_ptr<std::string> m_load_kart;
+    std::unique_ptr<std::optional<std::string>> m_load_kart_result;
+    std::unique_ptr<std::string> m_delete_kart;
+    std::condition_variable m_cv;
+    void evaluateChangeRequests();
 };   // RaceManager
 
 #endif

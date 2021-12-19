@@ -19,16 +19,18 @@
 #ifndef HEADER_SFX_MANAGER_HPP
 #define HEADER_SFX_MANAGER_HPP
 
+#include <condition_variable>
+#include <filesystem>
+#include <map>
+#include <mutex>
+#include <string>
+#include <thread>
+
 #include "utils/can_be_deleted.hpp"
 #include "utils/leak_check.hpp"
 #include "utils/no_copy.hpp"
 #include "utils/synchronised.hpp"
 #include "utils/vec3.hpp"
-
-#include <condition_variable>
-#include <map>
-#include <string>
-#include <thread>
 
 #include <vector>
 
@@ -120,13 +122,13 @@ private:
         LEAK_CHECK()
     public:
         /** The sound effect for which the command should be executed. */
-        SFXBase *m_sfx;
+        SFXBase *m_sfx = nullptr;
 
         /** The sound buffer to play (null = no change) */
-        SFXBuffer *m_buffer = NULL;
+        SFXBuffer *m_buffer = nullptr;
 
         /** Stores music information for music commands. */
-        MusicInformation *m_music_information;
+        MusicInformation *m_music_information = nullptr;
 
         /** The command to execute. */
         SFXCommands m_command;
@@ -233,6 +235,12 @@ private:
     void deleteSFX(SFXBase *sfx);
     void queueCommand(SFXCommand *command);
     void reallyPositionListenerNow();
+    SFXBuffer*               loadSingleSfxWithThrow(const XMLNode* node,
+                                                    const std::string &path=std::string(""),
+                                                    const bool load = true);
+    SFXBuffer*               loadSingleSfx(const std::filesystem::path& path, bool load);
+    SFXBuffer*               loadSingleSfxLater(const std::filesystem::path& path);
+    static void handleRest(SFXManager& sfxManager);
 
 public:
     static void create();
@@ -254,10 +262,11 @@ public:
 
     // ------------------------------------------------------------------------
     void                     stopThread();
-    bool                     sfxAllowed();
+    bool                     sfxAllowed() const;
     SFXBuffer*               loadSingleSfx(const XMLNode* node,
                                            const std::string &path=std::string(""),
                                            const bool load = true);
+    SFXBuffer*               loadSingleSfxNow(const std::filesystem::path& path);
     SFXBuffer*               addSingleSfx(const std::string &sfx_name,
                                           const std::string &filename,
                                           bool               positional,
@@ -300,12 +309,33 @@ public:
 
     // ------------------------------------------------------------------------
     /** Returns the current position of the listener. */
+    [[nodiscard]]
     Vec3 getListenerPos() const { return m_listener_position.getData(); }
-
     // ------------------------------------------------------------------------
-
+    [[nodiscard]]
+    Vec3 getListenerDirection() const noexcept { return m_listener_front; }
+    // ------------------------------------------------------------------------
+    [[nodiscard]]
+    Vec3 getListenerUpDirection() const noexcept { return m_listener_up; }
+    // ------------------------------------------------------------------------
     SFXBuffer* getBuffer(const std::string &name);
+    // ------------------------------------------------------------------------
+    [[nodiscard]]
+    const std::map<std::string, SFXBuffer*>& getAllSfxTypes() const noexcept { return m_all_sfx_types; }
+    // ------------------------------------------------------------------------
+    [[nodiscard]]
+    const std::vector<SFXBase*>& getAllSfx() const noexcept { return m_all_sfx.getData(); }
+    // ------------------------------------------------------------------------
+    std::mutex m_rest_mutex;
+    std::condition_variable m_rest_condition;
+    MusicInformation* m_rest_deleted_music = nullptr;
+    SFXBase* m_rest_deleted_sfx = nullptr;
+    SFXBase* m_rest_change_sfx = nullptr;
+    const std::string* m_rest_status = nullptr;
+    const bool* m_rest_loop = nullptr;
+    const float* m_rest_volume = nullptr;
+    const float* m_rest_pitch = nullptr;
+    const Vec3* m_rest_position = nullptr;
 };
 
 #endif // HEADER_SFX_MANAGER_HPP
-
