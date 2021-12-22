@@ -1,0 +1,1803 @@
+openapi: 3.0.3
+info:
+  title: SuperTuxKart
+  description: REST-API for SuperTuxKart
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Game host
+paths:
+# -------------------------------------------------------------------------------------------------------------------- #
+# Game endpoints                                                                                                       #
+# -------------------------------------------------------------------------------------------------------------------- #
+  /karts:
+    get:
+      summary: "Installed karts"
+      responses:
+        '200':
+          description: Installed karts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/KartModel'
+    put:
+      summary: "Add add-on kart"
+      requestBody:
+        required: true
+        content:
+          application/zip:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '201':
+          description: "Add-on kart added"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KartModel'
+        '401':
+          description: "Invalid kart"
+        '500':
+          description: "Internal error"
+
+  /karts/{kartId}:
+    parameters:
+    - name: kartId
+      in: path
+      required: true
+      description: "Id of kart"
+      schema:
+        type: integer
+    get:
+      summary: "Kart"
+      responses:
+        '200':
+          description: Kart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KartModel'
+        '404':
+          description: "Kart does not exist"
+    delete:
+      summary: "Remove add-on kart"
+      responses:
+        '204':
+          description: Add-on kart deleted
+        '400':
+          description: "Kart cannot be deleted"
+  /music:
+    get:
+      summary: "Music library"
+      responses:
+        '200':
+          description: List of available music tracks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Music'
+    put:
+      summary: "Add add-on music track"
+      requestBody:
+        required: true
+        content:
+          application/zip:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '201':
+          description: "Add-on music track added"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Music'
+        '401':
+          description: "Invalid music track"
+        '500':
+          description: "Internal error"
+  /music/{musicId}:
+    parameters:
+    - name: musicId
+      in: path
+      required: true
+      description: "Id of song"
+      schema:
+        type: string
+    get:
+      summary: "Song"
+      responses:
+        '200':
+          description: "Song with specified id"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Music'
+        '404':
+          description: "Music track does not exist"
+    delete:
+      summary: "Remove add-on music track"
+      responses:
+        '204':
+          description: Music track deleted
+  /sfx:
+    get:
+      summary: "SFX library"
+      responses:
+        '200':
+          description: List of available SFXs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SfxType'
+    put:
+      summary: "Add add-on SFX"
+      requestBody:
+        required: true
+        content:
+          application/zip:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '201':
+          description: "Add-on SFX added"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SfxType'
+        '401':
+          description: "Invalid SFX"
+        '500':
+          description: "Internal error"
+  /sfx/{sfxId}:
+    parameters:
+    - name: sfxId
+      in: path
+      required: true
+      description: "Id of SFX"
+      schema:
+        type: string
+    get:
+      summary: "SFX"
+      responses:
+        '200':
+          description: "SFX with specified id"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SfxType'
+        '404':
+          description: "SFX does not exist"
+    delete:
+      summary: "Remove SFX"
+      responses:
+        '204':
+          description: SFX deleted
+  /tracks:
+    get:
+      summary: "Installed tracks"
+      responses:
+        '200':
+          description: Installed tracks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Track'
+    put:
+      summary: "Add add-on track"
+      requestBody:
+        required: true
+        content:
+          application/zip:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '201':
+          description: "Add-on track added"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Track'
+        '401':
+          description: "Invalid track"
+        '500':
+          description: "Internal error"
+  /tracks/{trackId}:
+    parameters:
+    - name: trackId
+      in: path
+      required: true
+      description: "Id of track"
+      schema:
+        type: string
+    get:
+      summary: "Track"
+      responses:
+        '200':
+          description: Track
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Track'
+        '404':
+          description: "Track does not exist"
+    delete:
+      summary: "Remove add-on track"
+      responses:
+        '204':
+          description: Track deleted
+        '400':
+          description: "Track cannot be deleted"
+# -------------------------------------------------------------------------------------------------------------------- #
+# Race endpoints                                                                                                       #
+# -------------------------------------------------------------------------------------------------------------------- #
+  /races:
+    get:
+      summary: "Current race"
+      responses:
+        '200':
+          description: "Current race"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentRace'
+    post:
+      summary: "Modify the current race"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [EXIT, PAUSE, RESUME, NEW]
+                race:
+                  type: object
+                  properties:
+                    laps:
+                      type: integer
+                    track:
+                      type: string
+                    ai-karts:
+                      type: array
+                      items:
+                        type: string
+                    difficulty:
+                      type: string
+                      enum: [NOVICE, INTERMEDIATE, EXPERT, SUPER_TUX]
+                    reverse:
+                      type: boolean
+      responses:
+        '200':
+          description: "Current race changed. Returns modified race resource."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentRace'
+        '401':
+          description: "Invalid race data received"
+  /races/{raceId}:
+    parameters:
+    - name: raceId
+      in: path
+      required: true
+      description: "Id of race"
+      schema:
+        type: number
+        format: integer
+    get:
+      summary: "Race with specified id"
+      responses:
+        '200':
+          description: "Race with specified id"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentRace'
+        '404':
+          description: "Race does not exist"
+    post:
+      summary: "Modify the current race"
+      description: "Race id must match current race id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [EXIT, PAUSE, RESUME, NEW]
+                race:
+                  type: object
+                  properties:
+                    laps:
+                      type: integer
+                    track:
+                      type: string
+                    ai-karts:
+                      type: array
+                      items:
+                        type: string
+                    difficulty:
+                      type: string
+                      enum: [NOVICE, INTERMEDIATE, EXPERT, SUPER_TUX]
+                    reverse:
+                      type: boolean
+      responses:
+        '200':
+          description: "Current race changed. Returns modified race resource."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentRace'
+        '401':
+          description: "Invalid race data received"
+        '404':
+          description: "Race id is not of the current race"
+  /races/{raceId}/items:
+    parameters:
+    - name: raceId
+      in: path
+      required: true
+      description: "Id of race"
+      schema:
+        type: number
+        format: integer
+    get:
+      summary: "List of bonus items"
+      responses:
+        '200':
+          description: List of bonus items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Item'
+        '404':
+          description: "Race does not exist"
+    put:
+      summary: "Add bonus item"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Item'
+      responses:
+        '201':
+          description: "Bonus item added"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '401':
+          description: "Invalid bonus item"
+  /races/{raceId}/items/{itemId}:
+    parameters:
+    - name: raceId
+      in: path
+      required: true
+      description: "Id of race"
+      schema:
+        type: number
+        format: integer
+    - name: itemId
+      in: path
+      required: true
+      description: "Array index of item"
+      schema:
+        type: integer
+    get:
+      summary: "Bonus item"
+      responses:
+        '200':
+          description: "Item with specified index"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '404':
+          description: "Race or item do not exist"
+    post:
+      summary: "Modify bonus item"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Item'
+      responses:
+        '200':
+          description: "Item modified. Returns the modified item."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '401':
+          description: "Invalid item data received"
+        '404':
+          description: "Item does not exist"
+    delete:
+      summary: "Remove bonus item"
+      responses:
+        '204':
+          description: Bonus item deleted
+  /races/{raceId}/checklines:
+    parameters:
+    - name: raceId
+      in: path
+      required: true
+      description: "Id of race"
+      schema:
+        type: number
+        format: integer
+    get:
+      summary: "List of checklines"
+      responses:
+        '200':
+          description: List of checklines
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Checkline'
+        '404':
+          description: "Race does not exist"
+  /races/{raceId}/checklines/{checklineId}:
+    parameters:
+    - name: raceId
+      in: path
+      required: true
+      description: "Id of race"
+      schema:
+        type: number
+        format: integer
+    - name: checklineId
+      in: path
+      required: true
+      description: "Id of checkline"
+      schema:
+        type: integer
+    get:
+      summary: "Checkline"
+      responses:
+        '200':
+          description: "Checkline with specified id"
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/Checkline'
+        '404':
+          description: "Race or checkline do not exist"
+  /races/{raceId}/karts:
+    parameters:
+    - name: raceId
+      in: path
+      required: true
+      description: "Id of race"
+      schema:
+        type: number
+        format: integer
+    get:
+      summary: "List of karts"
+      responses:
+        '200':
+          description: List of karts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Kart'
+        '404':
+          description: "Race does not exist"
+  /races/{raceId}/karts/{kartId}:
+    parameters:
+    - name: raceId
+      in: path
+      required: true
+      description: "Id of race"
+      schema:
+        type: number
+        format: integer
+    - name: kartId
+      in: path
+      required: true
+      description: "Id of kart"
+      schema:
+        type: integer
+    get:
+      summary: "Kart"
+      responses:
+        '200':
+          description: "Kart with specified id"
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/Kart'
+        '404':
+          description: "Race or kart do not exist"
+    post:
+      summary: "Modify kart"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                characteristics:
+                  type: object
+                  properties:
+                    ident:
+                      type: string
+                attachment:
+                  type: object
+                  nullable: true
+                  properties:
+                    type:
+                      $ref: '#/components/schemas/Attachment'
+                    ticks:
+                      type: integer
+                power-up:
+                  type: object
+                  nullable: true
+                  properties:
+                    name:
+                      $ref: '#/components/schemas/PowerUp'
+                    count:
+                      type: integer
+      responses:
+        '200':
+          description: "Kart modified. Returns the modified kart."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Kart'
+        '401':
+          description: "Invalid kart data received"
+        '404':
+          description: "Race or kart do not exist"
+  /races/{raceId}/materials:
+    parameters:
+    - name: raceId
+      in: path
+      required: true
+      description: "Id of race"
+      schema:
+        type: number
+        format: integer
+    get:
+      summary: "List of materials"
+      responses:
+        '200':
+          description: List of materials
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Material'
+        '404':
+          description: "Race does not exist"
+  /races/{raceId}/materials/{materialId}:
+    parameters:
+    - name: raceId
+      in: path
+      required: true
+      description: "Id of race"
+      schema:
+        type: number
+        format: integer
+    - name: materialId
+      in: path
+      required: true
+      description: "Id of material"
+      schema:
+        type: string
+    get:
+      summary: "Material"
+      responses:
+        '200':
+          description: "Material with specified name"
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/Material'
+        '404':
+          description: "Race or material do not exist"
+  /races/{raceId}/music:
+    parameters:
+    - name: raceId
+      in: path
+      required: true
+      description: "Id of race"
+      schema:
+        type: number
+        format: integer
+    get:
+      summary: "Current music"
+      responses:
+        '200':
+          description: Current song and list of available songs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                  volume:
+                    type: number
+                    format: float
+                  music:
+                    nullable: true
+                    anyOf:
+                      - $ref: '#/components/schemas/Music'
+        '404':
+          description: "Race does not exist"
+    post:
+      summary: "Modify music"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                volume:
+                  type: number
+                  format: float
+                music:
+                  type: string
+      responses:
+        '200':
+          description: "Music modified. Returns the modified music."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Music'
+        '401':
+          description: "Invalid music data received"
+        '404':
+          description: "Race does not exist"
+  /races/{raceId}/objects:
+    parameters:
+    - name: raceId
+      in: path
+      required: true
+      description: "Id of race"
+      schema:
+        type: number
+        format: integer
+    get:
+      summary: "List of objects"
+      responses:
+        '200':
+          description: List of objects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Object'
+        '404':
+          description: "Race does not exist"
+  /races/{raceId}/objects/{objectId}:
+    parameters:
+    - name: raceId
+      in: path
+      required: true
+      description: "Id of race"
+      schema:
+        type: number
+        format: integer
+    - name: objectId
+      in: path
+      required: true
+      description: "Index of object"
+      schema:
+        type: integer
+    get:
+      summary: "Object"
+      responses:
+        '200':
+          description: "Object with specified index"
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/Object'
+        '404':
+          description: "Race or object do not exist"
+    post:
+      summary: "Modify object"
+      requestBody:
+        required: true
+        description: color, radius, and energy are intenden for usage with objects of type light
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                position:
+                  $ref: '#/components/schemas/Vector'
+                enabled:
+                  type: boolean
+                color:
+                  type:
+                    integer
+                radius:
+                  type: number
+                  format: float
+                energy:
+                  type: number
+                  format: float
+      responses:
+        '200':
+          description: "Object modified. Returns the modified object."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Object'
+        '401':
+          description: "Invalid object data received"
+        '404':
+          description: "Race or object do not exist"
+    delete:
+      summary: "Delete object"
+      responses:
+        '204':
+          description: Object deleted
+        '401':
+          description: "Invalid object identifier"
+  /races/{raceId}/quads:
+    parameters:
+    - name: raceId
+      in: path
+      required: true
+      description: "Id of race"
+      schema:
+        type: number
+        format: integer
+    get:
+      summary: "List of quads"
+      responses:
+        '200':
+          description: List of quads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Quad'
+        '404':
+          description: "Race does not exist"
+  /races/{raceId}/quads/{quadId}:
+    parameters:
+    - name: raceId
+      in: path
+      required: true
+      description: "Id of race"
+      schema:
+        type: number
+        format: integer
+    - name: quadId
+      in: path
+      required: true
+      description: "Id of quad"
+      schema:
+        type: integer
+    get:
+      summary: "Quad"
+      responses:
+        '200':
+          description: "Quad with specified id"
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/Quad'
+        '404':
+          description: "Race or quad do not exist"
+  /races/{raceId}/sfx:
+    parameters:
+    - name: raceId
+      in: path
+      required: true
+      description: "Id of race"
+      schema:
+        type: number
+        format: integer
+    get:
+      summary: "List of sound effects"
+      responses:
+        '200':
+          description: List of sound effects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Sfx'
+        '404':
+          description: "Race does not exist"
+    post:
+      summary: "Modify master SFX settings"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sfx-allowed:
+                  type: boolean
+                master-volume:
+                  type: number
+                  format: float
+      responses:
+        '200':
+          description: "SFX modified. Returns the modified SFX settings."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sfx'
+        '401':
+          description: "Invalid SFX data received"
+        '404':
+          description: "Race does not exist"
+    put:
+      summary: "Add SFX"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sound:
+                  type: string
+      responses:
+        '201':
+          description: "SFX added"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SfxSound'
+        '401':
+          description: "Invalid SFX"
+  /races/{raceId}/sfx/{sfxId}:
+    parameters:
+    - name: raceId
+      in: path
+      required: true
+      description: "Id of race"
+      schema:
+        type: number
+        format: integer
+    - name: sfxId
+      in: path
+      required: true
+      description: "Index of SFX"
+      schema:
+        type: integer
+    get:
+      summary: "SFX with specified index"
+      responses:
+        '200':
+          description: SFX with specified index
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SfxSound'
+        '404':
+          description: "Race or SFX do not exist"
+    post:
+      summary: "Modify SFX"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SfxSound'
+      responses:
+        '200':
+          description: "SFX modified. Returns the modified SFX settings."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sfx'
+        '401':
+          description: "Invalid SFX data received"
+        '404':
+          description: "Race does not exist"
+    delete:
+      summary: "Delete SFX"
+      responses:
+        '204':
+          description: SFX deleted
+        '401':
+          description: "Invalid SFX identifier"
+  /races/{raceId}/weather:
+    parameters:
+    - name: raceId
+      in: path
+      required: true
+      description: "Id of race"
+      schema:
+        type: number
+        format: integer
+    get:
+      summary: "Weather"
+      responses:
+        '200':
+          description: Weather
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Weather'
+        '404':
+          description: "Race does not exist"
+    post:
+      summary: "Change the weather"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Weather'
+      responses:
+        '200':
+          description: "Weather changed. Returns current weather resource."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Weather'
+        '401':
+          description: "Invalid weather data received"
+        '404':
+          description: "Race does not exist"
+components:
+  schemas:
+# -------------------------------------------------------------------------------------------------------------------- #
+# Game endpoints                                                                                                       #
+# -------------------------------------------------------------------------------------------------------------------- #
+    KartModel:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        mass:
+          type: number
+          format: float
+        engine-max-speed:
+          type: number
+          format: float
+        acceleration-efficiency:
+          type: number
+          format: float
+        nitro-consumption:
+          type: number
+          format: float
+    Music:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        composer:
+          type: string
+        filename:
+          type: string
+        fast-filename:
+          type: string
+          nullable: true
+    SfxType:
+      type: object
+      properties:
+        id:
+          type: string
+        file:
+          type: string
+        loaded:
+          type: boolean
+        positional:
+          type: boolean
+        roll-off:
+          type: number
+          format: float
+        volume:
+          type: number
+          format: float
+        max-distance:
+          type: number
+          format: float
+        duration:
+          type: number
+          nullable: true
+          format: float
+    Track:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        modes:
+          type: object
+          properties:
+            race:
+              type: boolean
+            soccer:
+              type: boolean
+            arena:
+              type: boolean
+        groups:
+          type: array
+          items:
+            type: string
+# -------------------------------------------------------------------------------------------------------------------- #
+# Race endpoints                                                                                                       #
+# -------------------------------------------------------------------------------------------------------------------- #
+    CurrentRace:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - INTRO
+          - SETUP
+          - WAIT_FOR_SERVER
+          - SERVER_READY
+          - READY
+          - SET
+          - GO
+          - MUSIC
+          - RACE
+          - DELAY_FINISH
+          - RESULT_DISPLAY
+          - FINISH
+          - PAUSE
+          - NONE
+        race:
+          nullable: true
+          type: object
+          properties:
+            id:
+              type: number
+              format: integer
+            track:
+              type: string
+            major-race-mode:
+              type: string
+              enum: ["GRAND_PRIX", "SINGLE"]
+            minor-race-mode:
+              type: string
+              enum:
+              - NONE
+              - NORMAL_RACE
+              - TIME_TRIAL
+              - FOLLOW_LEADER
+              - 3_STRIKES
+              - FREE_FOR_ALL
+              - CAPTURE_THE_FLAG
+              - SOCCER
+              - EASTER_EGG
+              - OVERWORLD
+              - TUTORIAL
+              - CUTSCENE
+            difficulty:
+              type: string
+              enum: [NOVICE, INTERMEDIATE, EXPERT, SUPER_TUX]
+            clock-type:
+              type: string
+              enum: [NONE, CHRONO, COUNTDOWN]
+            time:
+              type: number
+              format: float
+    Checkline:
+      oneOf:
+        - $ref: '#/components/schemas/ChecklineActivate'
+        - $ref: '#/components/schemas/ChecklineLap'
+    ChecklineActivate:
+      type: object
+      properties:
+        id:
+          type: integer
+        kind:
+          type: string
+          enum: ["ACTIVATE"]
+        active-at-reset:
+          type: boolean
+        ignore-height:
+          type: boolean
+        position:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            $ref: '#/components/schemas/Vector'
+        other-ids:
+          type: array
+          items:
+            type: integer
+        same-group:
+          type: array
+          items:
+            type: integer
+        karts:
+          type: array
+          items:
+            type: integer
+    ChecklineLap:
+      type: object
+      properties:
+        id:
+          type: integer
+        kind:
+          type: string
+          enum: ["LAP"]
+        active-at-reset:
+          type: boolean
+        other-ids:
+          type: array
+          items:
+            type: integer
+        same-group:
+          type: array
+          items:
+            type: integer
+        karts:
+          type: array
+          items:
+            type: integer
+    Item:
+      type: object
+      properties:
+        id:
+          type: number
+          format: integer
+        position:
+          $ref: '#/components/schemas/Vector'
+        type:
+          $ref: '#/components/schemas/ItemType'
+        original-type:
+          nullable: true
+          anyOf:
+          - $ref: '#/components/schemas/ItemType'
+        ticks-until-return:
+          type: integer
+        used-up-counter:
+          type: integer
+          nullable: true
+    ItemType:
+      type: string
+      enum: ["BONUS_BOX", "BANANA", "NITRO_BIG", "NITRO_SMALL", "BUBBLEGUM", "BUBBLEGUM_NOLOK", "EASTER_EGG"]
+    Kart:
+      type: object
+      properties:
+        id:
+          type: integer
+        rank:
+          type: integer
+        controller:
+          type: string
+        characteristics:
+          type: object
+          properties:
+            ident:
+              type: string
+            color:
+              type: integer
+            type:
+              type: string
+            groups:
+              type: array
+              items:
+                type: string
+            engine-sfx:
+              type: string
+            skid-sound:
+              type: string
+            friction:
+              type: number
+              format: float
+            friction-slip:
+              type: number
+              format: float
+            terrain-impulse-type:
+              type: string
+              enum: ["NONE", "NORMAL", "TO_DRIVELINE"]
+        speed:
+          type: object
+          properties:
+            current:
+              type: number
+              format: float
+            max:
+              type: number
+              format: float
+            min-boost-speed:
+              type: number
+              nullable: true
+              format: float
+            velocity:
+              $ref: '#/components/schemas/Vector'
+            increase:
+              type: array
+              items:
+                $ref: '#/components/schemas/KartSpeedIncrease'
+            decrease:
+              type: array
+              items:
+                $ref: '#/components/schemas/KartSpeedDecrease'
+        position:
+          type: object
+          properties:
+            current:
+              $ref: '#/components/schemas/Vector'
+            front:
+              $ref: '#/components/schemas/Vector'
+            jumping:
+              type: boolean
+            flying:
+              type: boolean
+            near-ground:
+              type: boolean
+            on-ground:
+              type: boolean
+            pitch:
+              type: number
+              format: float
+            roll:
+              type: number
+              format: float
+            lean:
+              type: number
+              format: float
+            lean-max:
+              type: number
+              format: float
+        status:
+          type: object
+          properties:
+            handicap:
+              type: string
+              enum: ["NONE", "MEDIUM"]
+            boosted-ai:
+              type: boolean
+            blocked-by-plunger:
+              type: boolean
+            shielded:
+              type: boolean
+            squashed:
+              type: boolean
+            eliminated:
+              type: boolean
+            ghost:
+              type: boolean
+            rescue:
+              type: boolean
+        skidding:
+          type: object
+          properties:
+            status:
+              type: string
+              nullable: true
+              enum: ["ACCUMULATE_LEFT", "ACCUMULATE_RIGHT", "SHOW_GFX_LEFT", "SHOW_GFX_RIGHT", "BREAK"]
+            ready:
+              type: boolean
+            factor:
+              type: number
+              format: float
+            max:
+              type: number
+              format: float
+        control:
+          type: object
+          properties:
+            steer:
+              type: number
+              format: float
+            max-steer:
+              type: number
+              format: float
+            acceleration:
+              type: number
+              format: float
+            braking:
+              type: boolean
+            fire:
+              type: boolean
+            look-back:
+              type: boolean
+            skid-control:
+              type: string
+              enum: ["NONE", "NO_DIRECTION", "LEFT", "RIGHT"]
+        collision:
+          type: object
+          properties:
+            impulse:
+              type: number
+              format: float
+            time:
+              type: number
+              format: float
+            restitution:
+              type: number
+              format: float
+        nitro:
+          type: object
+          properties:
+            collected:
+              type: number
+              format: float
+            max:
+              type: number
+              format: float
+            min-ticks:
+              type: integer
+            consumption-per-tick:
+              type: number
+              format: float
+            activated:
+              type: boolean
+        attachment:
+          nullable: true
+          anyOf:
+            - $ref: '#/components/schemas/Attachment'
+        power-up:
+          type: object
+          nullable: true
+          properties:
+            type:
+              $ref: '#/components/schemas/PowerUp'
+            count:
+              type: integer
+        icon:
+          type: string
+        minimap-icon:
+          type: string
+        shadow:
+          type: string
+        ground:
+          type: string
+    Attachment:
+      type: string
+      enum:
+      - "PARACHUTE"
+      - "ANVIL"
+      - "BOMB"
+      - "SWATTER"
+      - "NOLOKS_SWATTER"
+      - "SWATTER_ANIM"
+      - "BUBBLEGUM_SHIELD"
+      - "NOLOK_BUBBLEGUM_SHIELD"
+    PowerUp:
+      type: string
+      enum:
+      - "BUBBLEGUM"
+      - "CAKE"
+      - "BOWLING"
+      - "ZIPPER"
+      - "PLUNGER"
+      - "SWITCH"
+      - "SWATTER"
+      - "RUBBERBALL"
+      - "PARACHUTE"
+      - "ANVIL"
+    KartSpeedIncrease:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: ["ZIPPER", "SLIPSTREAM", "NITRO", "RUBBER", "SKIDDING", "RED_SKIDDING"]
+        time-left:
+          type: integer
+          nullable: true
+        value:
+          type: number
+          format: float
+        engine-force:
+          type: number
+          format: float
+    KartSpeedDecrease:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: ["TERRAIN", "AI", "BUBBLE", "SQUASH"]
+        time-left:
+          type: integer
+          nullable: true
+        fraction:
+          type: number
+          format: float
+    Light:
+      type: object
+      properties:
+        color:
+          type: number
+          format: integer
+        energy:
+          type: number
+          format: float
+        radius:
+          type: number
+          format: float
+    Material:
+      type: object
+      properties:
+        texture:
+          type: object
+          properties:
+            name:
+              type: string
+            path:
+              type: string
+        mirror-axis-when-reverse:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 1
+        below-surface:
+          type: boolean
+        falling-effect:
+          type: boolean
+        surface:
+          type: boolean
+        drive-reset:
+          type: boolean
+        jump-texture:
+          type: boolean
+        gravity:
+          type: boolean
+        ignore:
+          type: boolean
+        high-tire-adhesion:
+          type: boolean
+        texture-compression:
+          type: boolean
+        collision:
+          type: object
+          properties:
+            collision-reaction-value:
+              type: string
+              enum: ["NORMAL", "RESCUE", "PUSH_BACK", "PUSH_SOCCER_BALL"]
+            particles:
+              type: string
+              nullable: true
+        particles:
+          type: object
+          properties:
+            on-drive:
+              type: string
+              nullable: true
+            on-skid:
+              type: string
+              nullable: true
+        clamp:
+          type: object
+          properties:
+            u:
+              type: boolean
+            v:
+              type: boolean
+        hue:
+          type: array
+          nullable: true
+          items:
+            type: number
+            format: float
+        slowdown:
+          type: object
+          nullable: true
+          properties:
+            ticks:
+              type: integer
+            max-speed-fraction:
+              type: number
+              format: float
+        zipper:
+          type: object
+          nullable: true
+          properties:
+            min-speed:
+              type: number
+              format: float
+            max-speed-increase:
+              type: number
+              format: float
+            duration:
+              type: number
+              format: float
+            speed-gain:
+              type: number
+              format: float
+            fade-out-time:
+              type: number
+              format: float
+            engine-force:
+              type: number
+              format: float
+        sfx:
+          type: object
+          nullable: true
+          properties:
+            name:
+              type: string
+            speed:
+              $ref: '#/components/schemas/MinMax'
+            pitch:
+              type: object
+              properties:
+                min:
+                  type: number
+                  format: float
+                max:
+                  type: number
+                  format: float
+                per-speed:
+                  type: number
+                  format: float
+        alpha-mask:
+          type: string
+          nullable: true
+        colorization:
+          type: object
+          nullable: true
+          properties:
+            factor:
+              type: number
+              format: float
+            mask:
+              type: string
+        shader:
+          type: object
+          properties:
+            name:
+              type: string
+            uv-two-texture:
+              type: string
+              nullable: true
+            sampler-path:
+              type: array
+              minItems: 6
+              maxItems: 6
+              items:
+                type: string
+    Object:
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - enabled
+        - drivable
+        - animated
+        - position
+        - center
+        - rotation
+        - scale
+        - lod-group
+        - interaction
+        - children
+        - movable-children
+      properties:
+        id:
+          type: number
+          format: integer
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+            - "lod"
+            - "mesh"
+            - "particle-emitter"
+            - "sfx-emitter"
+            - "light"
+            - "library"
+        enabled:
+          type: boolean
+        drivable:
+          type: boolean
+        animated:
+          type: boolean
+        position:
+          $ref: '#/components/schemas/Vector'
+        center:
+          $ref: '#/components/schemas/Vector'
+        rotation:
+          $ref: '#/components/schemas/Vector'
+        scale:
+          $ref: '#/components/schemas/Vector'
+        lod-group:
+          type: string
+        interaction:
+          type: string
+        particle-emitter:
+          $ref: '#/components/schemas/ParticleEmitter'
+        light:
+          $ref: '#/components/schemas/Light'
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/Object'
+        movable-children:
+          type: array
+          items:
+            $ref: '#/components/schemas/Object'
+    ParticleEmitter:
+      type: object
+      properties:
+        size:
+          $ref: '#/components/schemas/MinMax'
+        rate:
+          $ref: '#/components/schemas/MinMax'
+        lifetime:
+          $ref: '#/components/schemas/MinMax'
+        fadeout-time:
+          type: integer
+        shape:
+          type: string
+          enum: ["BOX", "SPHERE", "POINT"]
+        material:
+          type: string
+        color:
+          type: object
+          properties:
+            min:
+              type: integer
+            max:
+              type: integer
+        box-size:
+          $ref: '#/components/schemas/Vector'
+        sphere-radius:
+          type: number
+          format: float
+        angle-spread:
+          type: integer
+        velocity:
+          $ref: '#/components/schemas/Vector'
+        emission-decay-rate:
+          type: number
+          format: float
+        scale-affector:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: number
+            format: float
+        flips:
+          type: boolean
+        vertical-particles:
+          type: boolean
+        randomize-initial-y:
+          type: boolean
+    Quad:
+      type: object
+      properties:
+        id:
+          type: integer
+        ignore:
+          type: boolean
+        invisible:
+          type: boolean
+        ai-ignore:
+          type: boolean
+        position:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items:
+            $ref: '#/components/schemas/Vector'
+        height-testing:
+          type: object
+          properties:
+            min:
+              type: number
+              format: float
+            max:
+              type: number
+              format: float
+        successors:
+          type: array
+          items:
+            type: integer
+    Sfx:
+      type: object
+      properties:
+        sfx-allowed:
+          type: boolean
+        master-volume:
+          type: number
+          format: float
+        listener:
+          type: object
+          properties:
+            position:
+              $ref: '#/components/schemas/Vector'
+            direction:
+              $ref: '#/components/schemas/Vector'
+            up:
+              $ref: '#/components/schemas/Vector'
+        sounds:
+          type: array
+          items:
+            $ref: '#/components/schemas/SfxSound'
+    SfxSound:
+      type: object
+      properties:
+        sound:
+          type: string
+        status:
+          type: string
+          enum: ["UNKNOWN", "STOPPED", "PAUSED", "PLAYING", "NOT_INITIALISED"]
+        loop:
+          type: boolean
+        volume:
+          type: number
+          format: float
+        pitch:
+          type: number
+          format: float
+        play-time:
+          type: number
+          format: float
+        position:
+          nullable: true
+          anyOf:
+          - $ref: '#/components/schemas/Vector'
+    Weather:
+      type: object
+      properties:
+        sky-color:
+          type: integer
+          nullable: true
+        sound:
+          type: string
+          nullable: true
+        particles:
+          type: string
+          nullable: true
+        lightning:
+          type: boolean
+    Vector:
+      type: array
+      minItems: 3
+      maxItems: 3
+      items:
+        type: number
+        format: float
+    MinMax:
+      type: object
+      properties:
+        min:
+          type: number
+          format: float
+        max:
+          type: number
+          format: float

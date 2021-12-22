@@ -1,0 +1,65 @@
+buildscript
+{
+    repositories
+    {
+        jcenter()
+        google()
+    }
+
+    dependencies
+    {
+        classpath 'com.android.tools.build:gradle:3.3.2'
+    }
+}
+
+allprojects
+{
+    repositories
+    {
+        jcenter()
+        google()
+    }
+}
+
+apply plugin: 'com.android.application'
+
+android
+{
+    compileSdkVersion compile_sdk_version.toInteger()
+    buildToolsVersion build_tools_ver
+
+    signingConfigs
+    {
+        release
+        {
+            storeFile file(keystore)
+            storePassword storepass
+            keyAlias alias
+            keyPassword storepass
+        }
+    }
+
+    buildTypes
+    {
+        release
+        {
+            signingConfig signingConfigs.release
+        }
+    }
+
+    sourceSets
+    {
+        main
+        {
+            manifest.srcFile 'AndroidManifest.xml'
+            jniLibs.srcDirs = ['libs']
+            res.srcDirs = ['res']
+            assets.srcDirs = ['assets']
+        }
+    }
+}
+
+dependencies
+{
+    implementation 'org.minidns:minidns-hla:0.3.3'
+}
