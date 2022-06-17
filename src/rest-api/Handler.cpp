@@ -431,7 +431,8 @@ std::pair<STATUS_CODE, std::string> findById(const std::vector<std::unique_ptr<E
         if ((element.get()->*getId)() == id)
         {
             rapidjson::Document result;
-            result.template CopyFrom(toJson(*element, result.GetAllocator()), result.GetAllocator());
+            //result.template = CopyFrom(toJson(*element, result.GetAllocator()), result.GetAllocator());
+            result.CopyFrom(result, result.GetAllocator());
             return {STATUS_CODE::OK, toString(result)};
         }
     }

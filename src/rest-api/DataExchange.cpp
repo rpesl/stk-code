@@ -274,7 +274,7 @@ void removeAddonDirectory(const std::filesystem::path& directory, const std::str
 SfxWrapper toSoundBuffer(const SFXBuffer& sfxBuffer)
 {
     const std::string& name = sfxBuffer.getName();
-    std::string file = std::filesystem::weakly_canonical(sfxBuffer.getFileName());
+    std::string file = std::filesystem::weakly_canonical(sfxBuffer.getFileName()).string();
     bool loaded = sfxBuffer.isLoaded();
     bool positional = sfxBuffer.isPositional();
     float rollOff = sfxBuffer.getRolloff();
@@ -603,7 +603,7 @@ public:
     [[nodiscard]]
     std::string loadNewKart(const std::filesystem::path& path) override
     {
-        raceManager_.m_load_kart = std::make_unique<std::string>(path);
+        raceManager_.m_load_kart = std::make_unique<std::string>(path.string());
         raceManager_.m_finished = false;
         std::optional<std::string> result;
         std::unique_lock<std::mutex> lock(raceManager_.m_mutex);
@@ -795,7 +795,7 @@ public:
     [[nodiscard]]
     std::string loadNewTrack(const std::filesystem::path& path) override
     {
-        if (!trackManager_.loadTrack(path / ""))
+        if (!trackManager_.loadTrack((path / "").string()))
         {
             removeDirectoryIfExists(path);
             throw std::invalid_argument("Cannot load track");

@@ -221,7 +221,7 @@ std::filesystem::path decompressZip(const std::string& zip, const std::filesyste
     std::transform(fileReaders.begin(), fileReaders.end(), std::back_inserter(files), [] (const auto& fileReader) { return fileReader.read(); });
     auto result = getRootDirectory(files, directory);
     if (std::filesystem::exists(result))
-        throw std::invalid_argument("Directory \"" + std::string(result) + "\" already exists");
+        throw std::invalid_argument("Directory \"" + result.string() + "\" already exists");
     writeFiles(files, directory);
     return result;
 }

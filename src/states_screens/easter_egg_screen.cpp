@@ -271,7 +271,9 @@ void EasterEggScreen::buildTrackList()
                            0 /* no badge */, IconButtonWidget::ICON_PATH_TYPE_RELATIVE);
 
     tracks_widget->updateItemDisplay();
-    std::random_shuffle( m_random_track_list.begin(), m_random_track_list.end() );
+    std::random_device random_device;
+    std::mt19937 generator(random_device());
+    std::shuffle( m_random_track_list.begin(), m_random_track_list.end(), generator);
 }
 
 // -----------------------------------------------------------------------------

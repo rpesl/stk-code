@@ -661,7 +661,7 @@ TEST_F(RaceSfxHandlerTest, Put)
     auto handler = RestApi::Handler::createRaceSfxHandler(sfx, mutex);
     EXPECT_CALL(sfx, add("TheSound"))
         .Times(1)
-        .WillOnce([] {
+        .WillOnce([] () -> std::unique_ptr<RestApi::SfxSoundWrapper> {
             return createMockSfxSoundWrapper(
                 "sound",
                 "status",
