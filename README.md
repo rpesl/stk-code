@@ -17,18 +17,19 @@ To build REST API for SuperTuxKart on Windows, follow these instructions:
 
 1. Clone the project `git clone https://github.com/rpesl/stk-code stk-code`
 2. Download and extract the [SuperTuxKart assets](https://github.com/supertuxkart/stk-assets-mobile/releases). Place the `stk-assets` folder next to the `stk-code` folder.
-
+```bash
     .
     ├── stk-code
     └── stk-assets
+ ```
 
 3. Download the Windows dependencies package from [SuperTuxKart - Dependencies latest](https://github.com/supertuxkart/dependencies/releases). For example `dependencies-win-x86_64.zip`. Unzip the file and place the folder inside `stk-code`.
-
+```bash
     .
     ├── stk-code
     │   └── dependencies-win-x86_64
     └── stk-assets
-    
+```
 4. Download and install [Visual Studio ](https://www.visualstudio.com/downloads/). Select "Desktop development with C++" in the installer.
 5. Download CMake from [CMake - download page](https://cmake.org/download/) and install it.
 6. Open CMake and
