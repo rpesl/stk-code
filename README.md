@@ -33,10 +33,10 @@ To build REST API for SuperTuxKart on Windows, follow these instructions:
 4. Download and install [Visual Studio ](https://www.visualstudio.com/downloads/). Select "Desktop development with C++" in the installer.
 5. Download CMake from [CMake - download page](https://cmake.org/download/) and install it.
 6. Open CMake and
-- Set "Where is the source code" to the path of `stk-code`.
-- Set "Where to build the binaries" to `.../stk-code/build`.
-- Press "Configure"; CMake will ask you if it is OK to create the aforementioned directory, press "Yes". CMake will then ask you about your version of Visual Studio. Confirm your selection; CMake will begin creating the required files for the build in the directory.
-- After CMake is finished, press the "Generate" button.
+    - Set "Where is the source code" to the path of `stk-code`.
+    - Set "Where to build the binaries" to `.../stk-code/build`.
+    - Press "Configure"; CMake will ask you if it is OK to create the aforementioned directory, press "Yes". CMake will then ask you about your version of Visual Studio. Confirm your selection; CMake will begin creating the required files for the build in the directory.
+    - After CMake is finished, press the "Generate" button.
 7. Navigate to your build directory and open the `SuperTuxKart.sln` file; Visual Studio will now load the solution.
 8. In the "Solution Explorer" on the right, right click on the `supertuxkart` project and select "Set as StartUp project".
 9. Open the "Build" menu and select "Build Solution".
