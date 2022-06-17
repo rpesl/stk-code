@@ -468,11 +468,12 @@ if(UNIX OR MINGW)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-function")
 endif()
 
-if(MINGW AND CMAKE_BUILD_TYPE MATCHES Release)
+if(MINGW AND CMAKE_BUILD_TYPE MATCHES Release)    
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--subsystem,windows")
 endif()
 
 if(WIN32)
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
     # By default windows.h has macros defined for min and max that screw up everything
     add_definitions(-DNOMINMAX)
 
@@ -623,8 +624,9 @@ else()
     add_definitions(-DENABLE_CRYPTO_MBEDTLS)
 endif()
 
-include(cmake/FindHttpLib.cmake)
-include(cmake/FindRapidJson.cmake)
+include(cmake/FindHttpLibCustom.cmake)
+
+include(cmake/FindRapidJsonCustom.cmake)
 
 # Common library dependencies
 target_link_libraries(supertuxkart

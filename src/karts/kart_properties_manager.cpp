@@ -38,6 +38,8 @@
 #include <stdexcept>
 #include <iostream>
 
+#include <random>
+
 KartPropertiesManager *kart_properties_manager=0;
 
 std::vector<std::string> KartPropertiesManager::m_kart_search_path;
@@ -597,9 +599,11 @@ void KartPropertiesManager::getRandomKartList(int count,
             }
 
             assert(random_kart_queue.size() > 0);
-
-            std::random_shuffle(random_kart_queue.begin(),
-                                random_kart_queue.end()   );
+     
+            std::random_device random_device;
+            std::mt19937 generator(random_device());
+            std::shuffle(random_kart_queue.begin(),
+                    random_kart_queue.end(), generator);
         }
 
         while (count > 0 && random_kart_queue.size() > 0)

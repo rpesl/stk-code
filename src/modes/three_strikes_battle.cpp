@@ -45,6 +45,8 @@
 #include <string>
 #include <IMeshSceneNode.h>
 
+#include <random>
+
 //-----------------------------------------------------------------------------
 /** Constructor. Sets up the clock mode etc.
  */
@@ -690,8 +692,9 @@ void ThreeStrikesBattle::loadCustomModels()
             }
 
             // Find random nodes to pre-spawn spare tire karts
-            std::random_shuffle(sta_possible_nodes.begin(),
-                sta_possible_nodes.end());
+            std::random_device random_device;
+            std::mt19937 generator(random_device());
+            std::shuffle(sta_possible_nodes.begin(), sta_possible_nodes.end(), generator);
 
             // Compute a random kart list
             std::vector<std::string> sta_list;

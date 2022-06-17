@@ -43,6 +43,8 @@ using namespace irr;
 #include "utils/vec3.hpp"
 #include "utils/stk_process.hpp"
 
+#include <random>
+
 class AbstractKart;
 class AnimationManager;
 class BezierCurve;
@@ -548,7 +550,10 @@ public:
     */
     void shuffleStartTransforms()
     {
-        std::random_shuffle(m_start_transforms.begin(), m_start_transforms.end());
+        //std::random_shuffle(m_start_transforms.begin(), m_start_transforms.end());
+        std::random_device random_device;
+        std::mt19937 generator(random_device());
+        std::shuffle(m_start_transforms.begin(), m_start_transforms.end(), generator);
     }
     // ------------------------------------------------------------------------
     /** Sets pointer to the aabb of this track. */

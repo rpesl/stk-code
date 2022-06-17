@@ -620,7 +620,7 @@ bool SFXManager::sfxAllowed() const
 //----------------------------------------------------------------------------
 static std::string getSfxName(const std::filesystem::path& path)
 {
-    auto xml = std::unique_ptr<XMLNode>(file_manager->createXMLTree(path / "sfx.xml"));
+    auto xml = std::unique_ptr<XMLNode>(file_manager->createXMLTree((path / "sfx.xml").string()));
     if (!xml || xml->getName() != "sfx")
         throw std::invalid_argument("Cannot load sfx xml file");
     std::string filename;
@@ -806,12 +806,12 @@ SFXBuffer* SFXManager::loadSingleSfx(const std::filesystem::path& path, bool loa
     auto xmlPath = path / "sfx.xml";
     if (!std::filesystem::exists(xmlPath))
         throw std::invalid_argument("Path \"" + xmlPath.string() + "\" does not exist");
-    auto root = std::unique_ptr<XMLNode>(file_manager->createXMLTree(xmlPath));
+    auto root = std::unique_ptr<XMLNode>(file_manager->createXMLTree(xmlPath.string()));
     if (!root)
         throw std::invalid_argument("Cannot load XML file \"" + path.string() + "\"");
     if (root->getName() != "sfx")
         throw std::invalid_argument("root element must be \"sfx\"");
-    return loadSingleSfxWithThrow(root.get(), path, load);
+    return loadSingleSfxWithThrow(root.get(), path.string(), load);
 }
 //----------------------------------------------------------------------------
 SFXBuffer* SFXManager::loadSingleSfxLater(const std::filesystem::path& path)

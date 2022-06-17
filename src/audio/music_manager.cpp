@@ -335,11 +335,11 @@ MusicInformation& MusicManager::loadAddonMusic(const std::filesystem::path& dire
         throw std::invalid_argument("Zip file must contain exactly one music track");
     if (musicFile.stem() != directory.filename())
         throw std::invalid_argument(".music file must match directory name");
-    MusicInformation* music = MusicInformation::create(musicFile);
+    MusicInformation* music = MusicInformation::create(musicFile.string());
     if (!music)
         throw std::invalid_argument("Cannot load music file");
     m_all_music_store.emplace_back(music);
-    m_all_music[musicFile.filename()] = music;
+    m_all_music[musicFile.filename().string()] = music;
     for (size_t i = 0; i < track_manager->getNumberOfTracks(); i++)
     {
         Track* track = track_manager->getTrack(i);
