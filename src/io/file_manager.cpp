@@ -486,7 +486,7 @@ void FileManager::addAssetsSearchPath()
         {
             if (entry.is_directory())
             {
-                pushMusicSearchPath(entry.path());
+                pushMusicSearchPath(entry.path().string());
             }
         }
     }
