@@ -1,4 +1,3 @@
-#find_package(GTest REQUIRED)
 find_package(GTest QUIET)
 
 if(NOT (GTEST_FOUND))
@@ -24,4 +23,3 @@ if(NOT (GTEST_FOUND))
     ${CMAKE_BINARY_DIR}/googletest-build
     EXCLUDE_FROM_ALL)
 endif()
-

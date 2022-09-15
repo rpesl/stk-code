@@ -9,6 +9,7 @@
 #include "modes/world.hpp"
 #include "rest-api/Handler.hpp"
 #include "rest-api/DataExchange.hpp"
+#include <iostream>
 // ---------------------------------------------------------------------------------------------------------------------
 namespace RestApi
 {
@@ -272,7 +273,7 @@ std::string toString(const rapidjson::Value& value)
     return stringBuffer.GetString();
 }
 // ---------------------------------------------------------------------------------------------------------------------
-std::optional<size_t> parseString(const std::string& value)
+std::optional<uint64_t> parseString(const std::string& value)
 {
     try
     {
@@ -431,8 +432,7 @@ std::pair<STATUS_CODE, std::string> findById(const std::vector<std::unique_ptr<E
         if ((element.get()->*getId)() == id)
         {
             rapidjson::Document result;
-            //result.template = CopyFrom(toJson(*element, result.GetAllocator()), result.GetAllocator());
-            result.CopyFrom(result, result.GetAllocator());
+            result.CopyFrom(toJson(*element, result.GetAllocator()), result.GetAllocator());
             return {STATUS_CODE::OK, toString(result)};
         }
     }
@@ -1135,7 +1135,7 @@ private:
         checklineValue.AddMember("same-group", sameGroupValue, alloc);
         rapidjson::Value active;
         active.SetArray();
-        for (size_t i = 0; i < checkline.active.size(); ++i)
+        for (uint64_t i = 0; i < checkline.active.size(); i++)
         {
             if (checkline.active[i])
             {

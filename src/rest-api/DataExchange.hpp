@@ -52,7 +52,7 @@ public:
 
 public:
     ~RaceExchange() noexcept override = default;
-    [[nodiscard]] virtual std::optional<size_t> getId() const = 0;
+    [[nodiscard]] virtual std::optional<uint64_t> getId() const = 0;
     [[nodiscard]] virtual std::string getStatus() const = 0;
     [[nodiscard]] virtual bool isActive() const = 0;
     [[nodiscard]] virtual std::optional<std::string> getTrackName() const = 0;
@@ -164,7 +164,7 @@ public:
 
 public:
     virtual ~BonusItemWrapper() noexcept = default;
-    [[nodiscard]] virtual size_t getId() const = 0;
+    [[nodiscard]] virtual uint64_t getId() const = 0;
     [[nodiscard]] virtual Position getPosition() const = 0;
     [[nodiscard]] virtual std::string getType() const = 0;
     [[nodiscard]] virtual std::optional<std::string> getOriginalType() const = 0;
@@ -251,7 +251,7 @@ public:
     virtual ~KartWrapper() noexcept = default;
 
     // Id
-    [[nodiscard]] virtual size_t getId() const = 0;
+    [[nodiscard]] virtual uint64_t getId() const = 0;
 
     // Rank
     [[nodiscard]] virtual int getRank() const = 0;
@@ -483,7 +483,7 @@ public:
 
 public:
     virtual ~ObjectWrapper() noexcept = default;
-    [[nodiscard]] virtual size_t getId() const = 0;
+    [[nodiscard]] virtual uint64_t getId() const = 0;
     [[nodiscard]] virtual std::string getName() const = 0;
     [[nodiscard]] virtual std::string getType() const = 0;
     [[nodiscard]] virtual bool isEnabled() const = 0;

@@ -1262,7 +1262,7 @@ core::stringw RaceManager::getDifficultyName(Difficulty diff) const
     return "";
 }   // getDifficultyName
 //---------------------------------------------------------------------------------------------
-std::optional<size_t> RaceManager::getCurrentRaceId() const
+std::optional<uint64_t> RaceManager::getCurrentRaceId() const
 {
     return m_race_observer.getCurrentRaceId();
 }

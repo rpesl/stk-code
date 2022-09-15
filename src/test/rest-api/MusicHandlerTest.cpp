@@ -17,7 +17,6 @@ class MusicHandlerTest : public MutexHandlerTestBase
 
 TEST_F(MusicHandlerTest, GetEmpty)
 {
-    std::mutex mutex;
     NiceMock<MockMusicExchange> library;
     auto handler = RestApi::Handler::createMusicHandler(library, getMutex());
     auto [status, result] = handler->handleGet();
@@ -27,7 +26,6 @@ TEST_F(MusicHandlerTest, GetEmpty)
 
 TEST_F(MusicHandlerTest, GetOne)
 {
-    std::mutex mutex;
     NiceMock<MockMusicExchange> library;
     ON_CALL(library, getAllMusic()).WillByDefault(
         Return(
@@ -58,7 +56,6 @@ TEST_F(MusicHandlerTest, GetOne)
 
 TEST_F(MusicHandlerTest, GetMany)
 {
-    std::mutex mutex;
     NiceMock<MockMusicExchange> library;
     ON_CALL(library, getAllMusic()).WillByDefault(
         Return(
@@ -103,7 +100,6 @@ TEST_F(MusicHandlerTest, GetMany)
 
 TEST_F(MusicHandlerTest, GetById)
 {
-    std::mutex mutex;
     NiceMock<MockMusicExchange> library;
     ON_CALL(library, getAllMusic()).WillByDefault(
         Return(
@@ -153,7 +149,6 @@ TEST_F(MusicHandlerTest, GetById)
 
 TEST_F(MusicHandlerTest, Put)
 {
-    std::mutex mutex;
     NiceMock<MockMusicExchange> library;
     ON_CALL(library, getAllMusic()).WillByDefault(
         Return(
@@ -220,7 +215,6 @@ TEST_F(MusicHandlerTest, Put)
 
 TEST_F(MusicHandlerTest, Delete)
 {
-    std::mutex mutex;
     NiceMock<MockMusicExchange> library;
     InSequence sequence;
     EXPECT_CALL(library, remove("music_123")).Times(1);

@@ -15,6 +15,8 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <random>
+
 #include "states_screens/online/tracks_screen.hpp"
 
 #include "audio/sfx_manager.hpp"
@@ -45,8 +47,6 @@
 #include "tracks/track_manager.hpp"
 #include "utils/string_utils.hpp"
 #include "utils/translation.hpp"
-
-#include <iostream>
 
 using namespace GUIEngine;
 using namespace irr::core;
@@ -147,11 +147,11 @@ void TracksScreen::eventCallback(Widget* widget, const std::string& name,
         RibbonWidget* tabs = this->getWidget<RibbonWidget>("trackgroups");
         UserConfigParams::m_last_used_track_group = tabs->getSelectionIDString(0);
         buildTrackList();
-        
+
         if (m_network_tracks)
         {
             auto cl = LobbyProtocol::get<ClientLobby>();
-    
+
             const PeerVote* vote = cl->getVote(STKHost::get()->getMyHostId());
             if (vote)
             {
@@ -338,12 +338,12 @@ void TracksScreen::beforeAddingWidget()
 
     RibbonWidget* tabs = getWidget<RibbonWidget>("trackgroups");
     tabs->clearAllChildren();
-    
+
     RaceManager::MinorRaceModeType minor_mode = RaceManager::get()->getMinorMode();
     bool is_soccer = minor_mode == RaceManager::MINOR_MODE_SOCCER;
     bool is_arena = is_soccer || RaceManager::get()->isBattleMode();
-    
-    const std::vector<std::string>& groups = 
+
+    const std::vector<std::string>& groups =
                         is_arena ? track_manager->getAllArenaGroups(is_soccer)
                                  : track_manager->getAllTrackGroups();
     const int group_amount = (int)groups.size();
@@ -772,9 +772,9 @@ void TracksScreen::updatePlayerVotes()
     auto cl = LobbyProtocol::get<ClientLobby>();
     if (GUIEngine::getCurrentScreen() != this || !cl || !m_vote_list)
         return;
-    
+
     std::string selected_name = m_vote_list->getSelectionInternalName();
-    
+
     m_vote_list->clear();
     for (unsigned i = 0; i < m_index_to_hostid.size(); i++)
     {
@@ -839,7 +839,7 @@ void TracksScreen::updatePlayerVotes()
                 StringUtils::toString(m_index_to_hostid[i]), row);
         }
     }
-    
+
     if (!selected_name.empty())
     {
         int id = m_vote_list->getItemID(selected_name);

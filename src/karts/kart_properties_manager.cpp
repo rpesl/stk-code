@@ -34,11 +34,10 @@
 
 #include <algorithm>
 #include <ctime>
-#include <stdio.h>
-#include <stdexcept>
 #include <iostream>
-
 #include <random>
+#include <stdexcept>
+#include <cstdio>
 
 KartPropertiesManager *kart_properties_manager=0;
 
@@ -599,7 +598,7 @@ void KartPropertiesManager::getRandomKartList(int count,
             }
 
             assert(random_kart_queue.size() > 0);
-     
+
             std::random_device random_device;
             std::mt19937 generator(random_device());
             std::shuffle(random_kart_queue.begin(),

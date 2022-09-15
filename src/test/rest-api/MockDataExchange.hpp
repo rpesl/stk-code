@@ -31,7 +31,7 @@ std::unique_ptr<testing::NiceMock<MockParticleWrapper>> createMockParticleWrappe
 class MockRaceExchange : public RestApi::RaceExchange
 {
 public:
-    MOCK_METHOD(std::optional<size_t>, getId, (), (const, override));
+    MOCK_METHOD(std::optional<uint64_t>, getId, (), (const, override));
     MOCK_METHOD(std::string, getStatus, (), (const, override));
     MOCK_METHOD(bool, isActive, (), (const, override));
     MOCK_METHOD(std::optional<std::string>, getTrackName, (), (const, override));
@@ -92,7 +92,7 @@ public:
 class MockBonusItemExchange : public RestApi::BonusItemWrapper
 {
 public:
-    MOCK_METHOD(size_t, getId, (), (const, override));
+    MOCK_METHOD(uint64_t, getId, (), (const, override));
     MOCK_METHOD(RestApi::Position, getPosition, (), (const, override));
     MOCK_METHOD(std::string, getType, (), (const, override));
     MOCK_METHOD(std::optional<std::string>, getOriginalType, (), (const, override));
@@ -119,9 +119,9 @@ public:
 // ---------------------------------------------------------------------------------------------------------------------
 class MockKartWrapper : public RestApi::KartWrapper
 {
-public:    
+public:
     // Id
-    MOCK_METHOD(size_t, getId, (), (const, override));
+    MOCK_METHOD(uint64_t, getId, (), (const, override));
 
     // Rank
     MOCK_METHOD(int, getRank, (), (const, override));
@@ -323,7 +323,7 @@ public:
 class MockObjectWrapper : public RestApi::ObjectWrapper
 {
 public:
-    MOCK_METHOD(size_t, getId, (), (const, override));
+    MOCK_METHOD(uint64_t, getId, (), (const, override));
     MOCK_METHOD(std::string, getName, (), (const, override));
     MOCK_METHOD(std::string, getType, (), (const, override));
     MOCK_METHOD(bool, isEnabled, (), (const, override));

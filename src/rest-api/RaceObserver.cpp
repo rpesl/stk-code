@@ -10,11 +10,11 @@ namespace
 class InMemoryRaceResultLoader final : public RaceResultLoader
 {
 public:
-    std::optional<size_t> getLatestId() const override
+    std::optional<uint64_t> getLatestId() const override
     {
         return latestId_;
     }
-    std::string get(size_t id) const override
+    std::string get(uint64_t id) const override
     {
         auto element = data_.find(id);
         if (element == data_.end())
@@ -23,14 +23,14 @@ public:
         }
         return element->second;
     }
-    void store(size_t id, const std::string& result) override
+    void store(uint64_t id, const std::string& result) override
     {
         latestId_ = latestId_ ? std::max(latestId_.value(), id) : id;
         data_.insert_or_assign(id, result);
     }
 private:
-    std::optional<size_t> latestId_;
-    std::unordered_map<size_t, std::string> data_;
+    std::optional<uint64_t> latestId_;
+    std::unordered_map<uint64_t, std::string> data_;
 };
 }
 
@@ -65,7 +65,7 @@ void RaceObserver::stop()
     active_ = false;
 }
 
-std::optional<size_t> RaceObserver::getCurrentRaceId() const
+std::optional<uint64_t> RaceObserver::getCurrentRaceId() const
 {
     return active_ ? id_ : std::nullopt;
 }

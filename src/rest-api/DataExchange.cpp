@@ -303,7 +303,7 @@ public:
     {
     }
     [[nodiscard]]
-    std::optional<size_t> getId() const override
+    std::optional<uint64_t> getId() const override
     {
         return raceManager_.getCurrentRaceId();
     }
@@ -855,7 +855,7 @@ public:
     {
     }
     [[nodiscard]]
-    size_t getId() const override
+    uint64_t getId() const override
     {
         return m_state.getItemId();
     }
@@ -1069,7 +1069,7 @@ public:
 
     // Id
     [[nodiscard]]
-    size_t getId() const override
+    uint64_t getId() const override
     {
         return kart_.getWorldKartId();
     }
@@ -2173,7 +2173,7 @@ public:
     {
     }
     [[nodiscard]]
-    size_t getId() const override
+    uint64_t getId() const override
     {
         return object_.getUniqueIdentifier();
     }
