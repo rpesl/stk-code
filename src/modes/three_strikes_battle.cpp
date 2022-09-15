@@ -15,6 +15,12 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <algorithm>
+#include <deque>
+#include <IMeshSceneNode.h>
+#include <random>
+#include <string>
+
 #include "modes/three_strikes_battle.hpp"
 
 #include "main_loop.hpp"
@@ -39,14 +45,6 @@
 #include "utils/constants.hpp"
 #include "utils/string_utils.hpp"
 #include "utils/translation.hpp"
-
-#include <algorithm>
-#include <deque>
-#include <string>
-#include <IMeshSceneNode.h>
-
-#include <random>
-
 //-----------------------------------------------------------------------------
 /** Constructor. Sets up the clock mode etc.
  */

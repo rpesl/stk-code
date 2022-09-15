@@ -21,7 +21,7 @@ To build REST API for SuperTuxKart on Windows, follow these instructions:
     .
     ├── stk-code
     └── stk-assets
- ```
+```
 
 3. Download the Windows dependencies package from [SuperTuxKart - Dependencies latest](https://github.com/supertuxkart/dependencies/releases). For example `dependencies-win-x86_64.zip`. Unzip the file and place the folder inside `stk-code`.
 ```bash

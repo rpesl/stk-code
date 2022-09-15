@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 2.8.4)
 # root CMakeLists for the SuperTuxKart project
 project(SuperTuxKart)
 set(PROJECT_VERSION "git")
+set(CMAKE_CXX_STANDARD 17)
 
 add_definitions( -DSUPERTUXKART_VERSION="${PROJECT_VERSION}" )
 
@@ -84,7 +85,7 @@ if (IOS)
 endif()
 
 if((UNIX AND NOT APPLE) AND NOT SERVER_ONLY)
-    if((${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm") OR 
+    if((${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm") OR
        (${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64"))
         option(USE_GLES2 "Use OpenGL ES2 renderer" ON)
     else()
@@ -468,7 +469,7 @@ if(UNIX OR MINGW)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-function")
 endif()
 
-if(MINGW AND CMAKE_BUILD_TYPE MATCHES Release)    
+if(MINGW AND CMAKE_BUILD_TYPE MATCHES Release)
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--subsystem,windows")
 endif()
 
@@ -625,7 +626,6 @@ else()
 endif()
 
 include(cmake/FindHttpLibCustom.cmake)
-
 include(cmake/FindRapidJsonCustom.cmake)
 
 # Common library dependencies
@@ -845,7 +845,7 @@ if(CHECK_ASSETS)
 endif()
 
 # ==== Unit testing ====
-include(cmake/FindGoogleTest.cmake)
+include(cmake/FindGoogleTestCustom.cmake)
 set(STK_SOURCES_NO_MAIN ${STK_SOURCES})
 list(FILTER STK_SOURCES_NO_MAIN EXCLUDE REGEX "^src\\/main\\.cpp")
 file(GLOB_RECURSE TEST_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/*.cpp")

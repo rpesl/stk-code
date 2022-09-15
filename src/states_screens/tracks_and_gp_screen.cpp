@@ -15,6 +15,8 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <random>
+
 #include "states_screens/tracks_and_gp_screen.hpp"
 
 #include "challenges/unlock_manager.hpp"
@@ -35,8 +37,6 @@
 #include "tracks/track_manager.hpp"
 #include "utils/string_utils.hpp"
 #include "utils/translation.hpp"
-
-#include <iostream>
 
 using namespace GUIEngine;
 using namespace irr::core;

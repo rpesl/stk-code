@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <atomic>
 #include <memory>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -42,8 +43,6 @@ using namespace irr;
 #include "utils/log.hpp"
 #include "utils/vec3.hpp"
 #include "utils/stk_process.hpp"
-
-#include <random>
 
 class AbstractKart;
 class AnimationManager;
@@ -550,7 +549,6 @@ public:
     */
     void shuffleStartTransforms()
     {
-        //std::random_shuffle(m_start_transforms.begin(), m_start_transforms.end());
         std::random_device random_device;
         std::mt19937 generator(random_device());
         std::shuffle(m_start_transforms.begin(), m_start_transforms.end(), generator);

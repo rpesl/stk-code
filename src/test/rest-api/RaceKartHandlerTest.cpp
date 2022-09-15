@@ -37,7 +37,7 @@ TEST_F(RaceKartHandlerTest, KartEmpty)
 }
 
 static std::unique_ptr<NiceMock<MockKartWrapper>> createMockKartExchange(
-    size_t id,
+    uint64_t id,
     int rank,
     const std::string& controller,
     const std::string& ident,

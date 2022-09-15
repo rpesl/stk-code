@@ -15,6 +15,8 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <random>
+
 #include "states_screens/easter_egg_screen.hpp"
 
 #include "challenges/unlock_manager.hpp"
@@ -31,8 +33,6 @@
 #include "tracks/track_manager.hpp"
 #include "utils/string_utils.hpp"
 #include "utils/translation.hpp"
-
-#include <iostream>
 
 using namespace GUIEngine;
 using namespace irr::core;
@@ -150,7 +150,7 @@ void EasterEggScreen::beforeAddingWidget()
         // try to translate the group name
         tabs->addTextChild( _(groups[n].c_str()), groups[n] );
     }
-    
+
     int num_of_arenas=0;
     for (unsigned int n=0; n<track_manager->getNumberOfTracks(); n++) //iterate through tracks to find how many are arenas
     {
